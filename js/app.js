@@ -591,13 +591,15 @@ const views = {
     </div>
     <div class="card mt16">
       <h3>🐸 挖挖（大模型）</h3>
-      <div class="muted mt16" style="font-size:12px">默认内置规则模式即可用（加待办 / 查课表 / 设提醒 / 学情 / 教案）。填下方 Key 后助手可自由对话、调用工具处理任务。<span class="tag gray">密钥仅存本机浏览器</span></div>
+      <div class="muted mt16" style="font-size:12px">默认内置规则模式即可用（加待办 / 查课表 / 设提醒 / 学情 / 教案）。填下方「API Key」并保存后，挖挖可自由对话、调用工具处理任务。若保存后测试显示「网络 / 跨域被拦」，请用下方「🌉 中继地址」绕过（推荐）。<span class="tag gray">密钥仅存本机浏览器</span></div>
       <div class="grid cols-2 mt16">
         <div class="field"><label>接口地址（OpenAI 兼容）</label><input id="agentBase" placeholder="https://api.openai.com/v1"></div>
         <div class="field"><label>模型名</label><input id="agentModel" placeholder="gpt-4o-mini"></div>
       </div>
       <div class="muted mt8" style="font-size:12px;line-height:1.6">常用接口地址：DeepSeek <code>https://api.deepseek.com/v1</code> ｜ 通义 <code>https://dashscope.aliyuncs.com/compatible-mode/v1</code> ｜ 智谱 <code>https://open.bigmodel.cn/api/paas/v4</code> ｜ SiliconFlow <code>https://api.siliconflow.cn/v1</code>（模型名按平台填，如 deepseek-chat）</div>
       <div class="field"><label>API Key</label><input id="agentKey" type="password" placeholder="sk-... 或平台密钥"></div>
+      <div class="field mt8"><label>🌉 中继地址（解决跨域 CORS，推荐）</label><input id="agentRelay" placeholder="https://你的中继服务网址/  （留空则浏览器直连）"></div>
+      <div class="muted mt8" style="font-size:12px;line-height:1.6">若保存 Key 后测试提示「网络不可达 / 跨域拦截」，把密钥与接口地址配置到你自己的中继服务（如 Cloudflare Worker，仓库内含 <code>relay/worker.js</code>），此处填入该服务网址即可。密钥由中继保管，浏览器不再直连大模型，彻底绕过 CORS。</div>
       <div class="flex gap8 mt8">
         <button class="btn sm" id="agentCfgSave">保存配置</button>
         <button class="btn line sm" id="agentCfgClear">清除</button>
@@ -2194,10 +2196,10 @@ function buildComment(s){
 async function enhanceCommentWithAgent(s, base){
   try{
     const cfg = JSON.parse(localStorage.getItem('yu_agent_cfg')||'null');
-    if(!cfg || !cfg.key) return base;
+    if(!cfg || !(cfg.key || (cfg.relay&&cfg.relay.trim()))) return base;
     const sys='你是初中语文班主任「思思老师」的助手。请把下面这段操行评语草稿，润色为更自然、有温度、符合初中生身份的期末操行评语，保留所有事实（积分、成绩、亮点），不要虚构，300字以内。';
-    const r=await fetch((cfg.base||'https://api.openai.com/v1')+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+cfg.key},body:JSON.stringify({model:cfg.model||'gpt-4o-mini',messages:[{role:'system',content:sys},{role:'user',content:base}]})});
-    const j=await r.json(); const ai=j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content;
+    const data = await agentChat(cfg, {model:cfg.model||'gpt-4o-mini', messages:[{role:'system',content:sys},{role:'user',content:base}]});
+    const ai=data.choices&&data.choices[0]&&data.choices[0].message&&data.choices[0].message.content;
     return ai?ai.trim():base;
   }catch(e){ return base; }
 }
@@ -2708,13 +2710,10 @@ async function buildDraftFromFiles(files){
   try{
     const raw = localStorage.getItem('yu_agent_cfg');
     const cfg = raw ? JSON.parse(raw) : null;
-    if(cfg && cfg.key && text.trim()){
+    if(cfg && (cfg.key || (cfg.relay&&cfg.relay.trim())) && text.trim()){
       const sys = '你是语文教研助手。请把以下备课资料梳理为教案要点，输出：课题、教学目标、教学重难点、教学过程（3-5步）。只输出要点，不要解释。';
-      const r = await fetch((cfg.base||'https://api.openai.com/v1')+'/chat/completions', {
-        method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+cfg.key},
-        body: JSON.stringify({ model:cfg.model||'gpt-4o-mini', messages:[{role:'system',content:sys},{role:'user',content:text.slice(0,6000)}] })
-      });
-      const j = await r.json();
+      const data = await agentChat(cfg, {model:cfg.model||'gpt-4o-mini', messages:[{role:'system',content:sys},{role:'user',content:text.slice(0,6000)}]});
+      const j = data;
       const ai = (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content || '').trim();
       if(ai){ draft.note = (draft.note ? draft.note+'\n\n' : '') + '【智能体梳理】\n' + ai; tip = '已用智能体（挖挖）增强梳理'; }
     }
@@ -2972,9 +2971,9 @@ function bindView(view){
     const br = $('#bgReset'); if(br) br.onclick=()=>{ applyBg(''); presets.forEach(x=>x.classList.remove('active')); const def=content.querySelector('#bgPresets .bg-swatch[data-bg=""]'); if(def) def.classList.add('active'); toast('已恢复默认背景'); };
     // 智能体配置
     const ec = loadAgentCfg();
-    if(ec){ if($('#agentBase')&&ec.base) $('#agentBase').value=ec.base; if($('#agentModel')&&ec.model) $('#agentModel').value=ec.model; if($('#agentKey')&&ec.key) $('#agentKey').value=ec.key; }
-    const acs = $('#agentCfgSave'); if(acs) acs.onclick=()=>{ const cfg={ base:($('#agentBase').value||'').trim(), model:($('#agentModel').value||'').trim(), key:($('#agentKey').value||'').trim() }; if(!cfg.key){ toast('请填写 API Key'); return; } saveAgentCfg(cfg); toast('智能体配置已保存'); };
-    const acc = $('#agentCfgClear'); if(acc) acc.onclick=()=>{ saveAgentCfg(null); ['agentBase','agentModel','agentKey'].forEach(id=>{ const x=$('#'+id); if(x) x.value=''; }); toast('已清除智能体配置'); };
+    if(ec){ if($('#agentBase')&&ec.base) $('#agentBase').value=ec.base; if($('#agentModel')&&ec.model) $('#agentModel').value=ec.model; if($('#agentKey')&&ec.key) $('#agentKey').value=ec.key; if($('#agentRelay')&&ec.relay) $('#agentRelay').value=ec.relay; }
+    const acs = $('#agentCfgSave'); if(acs) acs.onclick=()=>{ const cfg={ base:($('#agentBase').value||'').trim(), model:($('#agentModel').value||'').trim(), key:($('#agentKey').value||'').trim(), relay:($('#agentRelay').value||'').trim() }; if(!cfg.key && !cfg.relay){ toast('请填写 API Key，或填写中继地址'); return; } saveAgentCfg(cfg); toast('智能体配置已保存'); };
+    const acc = $('#agentCfgClear'); if(acc) acc.onclick=()=>{ saveAgentCfg(null); ['agentBase','agentModel','agentKey','agentRelay'].forEach(id=>{ const x=$('#'+id); if(x) x.value=''; }); toast('已清除智能体配置'); };
     const atr = $('#agentTry'); if(atr) atr.onclick=()=>openAgent();
     const ats = $('#agentTest'); if(ats) ats.onclick=()=>testAgentConn();
     // 后端 API 地址回填
@@ -3629,7 +3628,7 @@ function agentUser(text){ const m=document.getElementById('agentMsgs'); if(!m) r
 function agentSend(text){
   agentHistory.push({role:'user', content:text});
   const cfg = loadAgentCfg();
-  if(cfg && cfg.key){ agentLLM(text, cfg); }
+  if(cfg && (cfg.key || (cfg.relay&&cfg.relay.trim()))){ agentLLM(text, cfg); }
   else { const r = agentRule(text); agentSay(r); agentHistory.push({role:'assistant', content:r}); }
 }
 
@@ -3769,15 +3768,26 @@ function agentToolCall(name, args){
     default: return '';
   }
 }
+// 统一的智能体对话请求：若配置「中继地址」则经中继转发（密钥由中继保管，彻底绕过浏览器跨域），否则直连供应商
+async function agentChat(cfg, payload){
+  if(cfg.relay && cfg.relay.trim()){
+    const r = await fetch(cfg.relay.trim(), { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    if(!r.ok) throw new Error('relay '+r.status);
+    return await r.json();
+  }
+  const url = (cfg.base || 'https://api.openai.com/v1') + '/chat/completions';
+  const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+cfg.key}, body:JSON.stringify(payload) });
+  if(!r.ok) throw new Error('provider '+r.status);
+  return await r.json();
+}
 async function agentLLM(text, cfg){
   agentSay('（思考中…）');
   const msgs = agentHistory.map(m=>({role:m.role, content:m.content}));
   msgs.unshift({role:'system', content:'你是语寓教师工作台的智能体助手，名字叫「挖挖」（一只浅绿色拟人小青蛙）。你性格可爱活泼、热情主动，回复简洁、用中文，可用 emoji。可调用工具处理待办/课表/提醒/学情/教案。'});
-  const head = { 'Content-Type':'application/json', 'Authorization':'Bearer '+cfg.key };
-  const url = cfg.base || 'https://api.openai.com/v1/chat/completions';
   const clearThinking = ()=>{ document.querySelectorAll('#agentMsgs .agent-msg.bot').forEach((n,i,a)=>{ if(i===a.length-1 && n.textContent.indexOf('思考中')>=0) n.remove(); }); };
   try{
-    let data = await (await fetch(url,{method:'POST',headers:head,body:JSON.stringify({model:cfg.model||'gpt-4o-mini',messages:msgs,tools:AGENT_TOOLS,tool_choice:'auto'})})).json();
+    const payload = {model:cfg.model||'gpt-4o-mini', messages:msgs, tools:AGENT_TOOLS, tool_choice:'auto'};
+    let data = await agentChat(cfg, payload);
     let msg = data.choices && data.choices[0] && data.choices[0].message;
     if(!msg){ clearThinking(); agentSay('（模型返回异常：'+(data.error&&data.error.message||'未知错误')+'）'); return; }
     let round=0;
@@ -3785,7 +3795,7 @@ async function agentLLM(text, cfg){
       const results=[];
       for(const tc of msg.tool_calls){ const fn=JSON.parse(tc.function.arguments||'{}'); results.push({role:'tool',tool_call_id:tc.id,content:agentToolCall(tc.function.name,fn)}); }
       msgs.push(msg); msgs.push(...results);
-      data = await (await fetch(url,{method:'POST',headers:head,body:JSON.stringify({model:cfg.model||'gpt-4o-mini',messages:msgs,tools:AGENT_TOOLS,tool_choice:'auto'})})).json();
+      data = await agentChat(cfg, {model:cfg.model||'gpt-4o-mini', messages:msgs, tools:AGENT_TOOLS, tool_choice:'auto'});
       msg = data.choices && data.choices[0] && data.choices[0].message; round++;
     }
     const reply = (msg.content||'').trim() || '（已处理）';
@@ -3793,8 +3803,8 @@ async function agentLLM(text, cfg){
   }catch(e){
     clearThinking();
     const msg=(e&&e.message)||String(e);
-    if(/Failed to fetch|NetworkError|Load failed|TypeError/i.test(msg)){
-      agentSay('（大模型调用失败：网络不可达，或被接口服务跨域(CORS)拦截。若是国内聚合商，通常不允许浏览器直连，需要经你自己的后端中转请求。）');
+    if(/Failed to fetch|NetworkError|Load failed|TypeError|relay|provider/i.test(msg)){
+      agentSay('（大模型调用失败：网络不可达，或被接口服务跨域(CORS)拦截。建议填写「🌉 中继地址」绕过跨域——在你自己的中继服务（如 Cloudflare Worker）里保管密钥与接口地址，浏览器只把对话内容发往中继。）');
     } else {
       agentSay('（大模型调用失败：'+msg+'。请检查 Key / 接口地址 / 网络，或切回规则模式。）');
     }
@@ -3803,19 +3813,29 @@ async function agentLLM(text, cfg){
 
 // 测试挖挖大模型连接（填完 Key 后可一键验证是否可用）
 function testAgentConn(){
-  const base=($('#agentBase').value||'').trim(), model=($('#agentModel').value||'').trim(), key=($('#agentKey').value||'').trim();
+  const base=($('#agentBase').value||'').trim(), model=($('#agentModel').value||'').trim(), key=($('#agentKey').value||'').trim(), relay=($('#agentRelay').value||'').trim();
   const box=$('#agentTestResult');
-  if(!key){ if(box) box.innerHTML='<span style="color:var(--red)">请先填写 API Key</span>'; return; }
+  if(!key && !relay){ if(box) box.innerHTML='<span style="color:var(--red)">请先填写 API Key，或填写中继地址</span>'; return; }
   if(box) box.textContent='连接测试中…';
+  const payload={model:model||'gpt-4o-mini', messages:[{role:'system',content:'ping'},{role:'user',content:'hi'}], max_tokens:5};
+  if(relay){
+    fetch(relay,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+      .then(r=>{
+        if(r.ok){ if(box) box.innerHTML='<span style="color:var(--accent-strong)">✅ 中继连接成功，保存后挖挖即可 AI 接管</span>'; }
+        else { if(box) box.innerHTML='<span style="color:var(--red)">❌ 中继返回 '+r.status+'，请检查中继服务的 BASE_URL / API_KEY 配置</span>'; }
+      })
+      .catch(e=>{ if(box) box.innerHTML='<span style="color:var(--red)">❌ 中继不可达：'+(e.message||e)+'。请确认中继网址正确且已部署。</span>'; });
+    return;
+  }
   const url=(base||'https://api.openai.com/v1')+'/chat/completions';
   const head={'Content-Type':'application/json','Authorization':'Bearer '+key};
-  fetch(url,{method:'POST',headers:head,body:JSON.stringify({model:model||'gpt-4o-mini',messages:[{role:'system',content:'ping'},{role:'user',content:'hi'}],max_tokens:5})})
+  fetch(url,{method:'POST',headers:head,body:JSON.stringify(payload)})
     .then(r=>{
       if(r.ok){ if(box) box.innerHTML='<span style="color:var(--accent-strong)">✅ 连接成功，保存后挖挖即可 AI 接管</span>'; }
       else if(r.status===401||r.status===403){ if(box) box.innerHTML='<span style="color:var(--red)">❌ 密钥无效或权限不足（'+r.status+'），请检查 Key 是否正确</span>'; }
       else { if(box) box.innerHTML='<span style="color:var(--red)">❌ 接口返回 '+r.status+'，请检查接口地址与模型名</span>'; }
     })
-    .catch(e=>{ if(box) box.innerHTML='<span style="color:var(--red)">❌ 网络不可达，或被接口跨域(CORS)拦截：'+(e.message||e)+'。<br>国内聚合商多不允许浏览器直连，需经自有后端中转。</span>'; });
+    .catch(e=>{ if(box) box.innerHTML='<span style="color:var(--red)">❌ 网络不可达，或被接口跨域(CORS)拦截：'+(e.message||e)+'。<br>国内聚合商多不允许浏览器直连，请改用「🌉 中继地址」。</span>'; });
 }
 
 // 待办按钮
