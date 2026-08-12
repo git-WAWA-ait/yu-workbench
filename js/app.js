@@ -596,12 +596,15 @@ const views = {
         <div class="field"><label>接口地址（OpenAI 兼容）</label><input id="agentBase" placeholder="https://api.openai.com/v1"></div>
         <div class="field"><label>模型名</label><input id="agentModel" placeholder="gpt-4o-mini"></div>
       </div>
-      <div class="field"><label>API Key</label><input id="agentKey" type="password" placeholder="sk-..."></div>
+      <div class="muted mt8" style="font-size:12px;line-height:1.6">常用接口地址：DeepSeek <code>https://api.deepseek.com/v1</code> ｜ 通义 <code>https://dashscope.aliyuncs.com/compatible-mode/v1</code> ｜ 智谱 <code>https://open.bigmodel.cn/api/paas/v4</code> ｜ SiliconFlow <code>https://api.siliconflow.cn/v1</code>（模型名按平台填，如 deepseek-chat）</div>
+      <div class="field"><label>API Key</label><input id="agentKey" type="password" placeholder="sk-... 或平台密钥"></div>
       <div class="flex gap8 mt8">
         <button class="btn sm" id="agentCfgSave">保存配置</button>
         <button class="btn line sm" id="agentCfgClear">清除</button>
+        <button class="btn line sm" id="agentTest">测试连接</button>
         <button class="btn line sm" id="agentTry">试用助手</button>
       </div>
+      <div class="muted mt8" id="agentTestResult" style="font-size:12px"></div>
     </div>`;
   },
 };
@@ -2973,6 +2976,7 @@ function bindView(view){
     const acs = $('#agentCfgSave'); if(acs) acs.onclick=()=>{ const cfg={ base:($('#agentBase').value||'').trim(), model:($('#agentModel').value||'').trim(), key:($('#agentKey').value||'').trim() }; if(!cfg.key){ toast('请填写 API Key'); return; } saveAgentCfg(cfg); toast('智能体配置已保存'); };
     const acc = $('#agentCfgClear'); if(acc) acc.onclick=()=>{ saveAgentCfg(null); ['agentBase','agentModel','agentKey'].forEach(id=>{ const x=$('#'+id); if(x) x.value=''; }); toast('已清除智能体配置'); };
     const atr = $('#agentTry'); if(atr) atr.onclick=()=>openAgent();
+    const ats = $('#agentTest'); if(ats) ats.onclick=()=>testAgentConn();
     // 后端 API 地址回填
     const ab = $('#apiBase');
     if(ab){ try{ ab.value = localStorage.getItem('yuyu_api_base') || ''; }catch(e){} }
@@ -3786,7 +3790,32 @@ async function agentLLM(text, cfg){
     }
     const reply = (msg.content||'').trim() || '（已处理）';
     clearThinking(); agentSay(reply); agentHistory.push({role:'assistant', content:reply});
-  }catch(e){ clearThinking(); agentSay('（大模型调用失败：'+(e.message||e)+'。可检查 Key/网络，或切回规则模式。）'); }
+  }catch(e){
+    clearThinking();
+    const msg=(e&&e.message)||String(e);
+    if(/Failed to fetch|NetworkError|Load failed|TypeError/i.test(msg)){
+      agentSay('（大模型调用失败：网络不可达，或被接口服务跨域(CORS)拦截。若是国内聚合商，通常不允许浏览器直连，需要经你自己的后端中转请求。）');
+    } else {
+      agentSay('（大模型调用失败：'+msg+'。请检查 Key / 接口地址 / 网络，或切回规则模式。）');
+    }
+  }
+}
+
+// 测试挖挖大模型连接（填完 Key 后可一键验证是否可用）
+function testAgentConn(){
+  const base=($('#agentBase').value||'').trim(), model=($('#agentModel').value||'').trim(), key=($('#agentKey').value||'').trim();
+  const box=$('#agentTestResult');
+  if(!key){ if(box) box.innerHTML='<span style="color:var(--red)">请先填写 API Key</span>'; return; }
+  if(box) box.textContent='连接测试中…';
+  const url=(base||'https://api.openai.com/v1')+'/chat/completions';
+  const head={'Content-Type':'application/json','Authorization':'Bearer '+key};
+  fetch(url,{method:'POST',headers:head,body:JSON.stringify({model:model||'gpt-4o-mini',messages:[{role:'system',content:'ping'},{role:'user',content:'hi'}],max_tokens:5})})
+    .then(r=>{
+      if(r.ok){ if(box) box.innerHTML='<span style="color:var(--accent-strong)">✅ 连接成功，保存后挖挖即可 AI 接管</span>'; }
+      else if(r.status===401||r.status===403){ if(box) box.innerHTML='<span style="color:var(--red)">❌ 密钥无效或权限不足（'+r.status+'），请检查 Key 是否正确</span>'; }
+      else { if(box) box.innerHTML='<span style="color:var(--red)">❌ 接口返回 '+r.status+'，请检查接口地址与模型名</span>'; }
+    })
+    .catch(e=>{ if(box) box.innerHTML='<span style="color:var(--red)">❌ 网络不可达，或被接口跨域(CORS)拦截：'+(e.message||e)+'。<br>国内聚合商多不允许浏览器直连，需经自有后端中转。</span>'; });
 }
 
 // 待办按钮
