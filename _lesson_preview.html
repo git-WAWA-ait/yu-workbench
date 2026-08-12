@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>备课中心 · 效果预览</title>
+<style>
+:root{
+  --bg:#eef5fb; --panel:#fff; --ink:#27384a; --muted:#6f8198;
+  --line:#dceaf6; --accent:#6ea8dc; --accent-soft:#eaf3fb; --accent-strong:#3f7fc0;
+  --blue:#5b9bd5; --blue-soft:#e8f1fa;
+  --green:#5cb88d; --green-soft:#e6f4ee;
+  --amber:#e0a85b; --amber-soft:#fbf0e2;
+  --purple:#8a9bd0; --purple-soft:#eef0f8;
+  --red:#d97a82; --red-soft:#fbe9ea;
+  --rc1:#fdeced;--rc2:#fbdde0;--rc3:#f7c3c8;--rc4:#f2a6ad;--rc5:#ec878f;--rc6:#e36771;
+  --radius:12px; --radius-sm:10px;
+  --shadow:0 1px 3px rgba(40,70,110,.06),0 6px 18px rgba(40,70,110,.05);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6}
+.wrap{max-width:1080px;margin:0 auto;padding:22px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+.section-title{font-size:16px;font-weight:600}
+.muted{color:var(--muted)}
+.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}.mb12{margin-bottom:12px}
+.flex{display:flex}.between{justify-content:space-between}.center{align-items:center}.gap8{gap:8px}.wrap-gap{flex-wrap:wrap}
+.grid{display:grid;gap:14px}.cols-2{grid-template-columns:repeat(2,1fr)}.cols-3{grid-template-columns:repeat(3,1fr)}
+.btn{background:var(--accent);color:#fff;border:none;padding:8px 14px;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;font-weight:500}
+.btn.line{background:#fff;color:var(--accent);border:1px solid var(--accent)}
+.btn.sm{padding:6px 12px;font-size:12px}
+.tag{font-size:11px;padding:2px 9px;border-radius:20px;background:#eef2f7;color:var(--muted)}
+.tag.red{background:var(--red-soft);color:var(--red)}
+.tag.blue{background:var(--blue-soft);color:var(--blue)}
+.tag.green{background:var(--green-soft);color:var(--green)}
+.tag.amber{background:var(--amber-soft);color:var(--amber)}
+.tag.purple{background:var(--purple-soft);color:var(--purple)}
+.subnav{display:flex;gap:8px;flex-wrap:wrap}
+.sub-tab{display:inline-flex;align-items:center;gap:6px;flex:none;background:#fff;border:1px solid var(--line);
+  border-radius:20px;padding:7px 14px;cursor:pointer;font-size:13px;color:var(--muted);font-weight:500}
+.sub-tab .hico{width:20px;height:20px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;background:var(--accent-soft);font-size:12px}
+.sub-tab.active{border-color:var(--accent);color:var(--accent-strong);background:var(--accent-soft)}
+.sub-tab.active .hico{background:var(--accent);color:#fff}
+/* 教案字段 */
+.field{display:flex;gap:8px;align-items:baseline;margin-top:8px}
+.field-label{flex:none;width:62px;color:var(--muted);font-size:13px}
+.field-val{flex:1;font-size:13px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:none}
+.row .main{flex:1}
+.row .title{font-size:14px}
+.row .meta{font-size:12px;color:var(--muted);margin-top:2px}
+/* 资源卡（常用网址 / 教材 共用） */
+.res{display:flex;flex-direction:column;cursor:pointer;transition:transform .15s,box-shadow .15s}
+.res:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(40,70,110,.12)}
+.res-ico{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.res-url{font-size:11px;color:#8aa;margin-top:auto}
+.res-open{margin-top:12px;font-size:12px;color:var(--accent);font-weight:600}
+.lp-ico{width:30px;height:30px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;background:var(--accent-soft);font-size:15px;flex:none}
+/* 课标 */
+.mini-group{background:var(--accent-soft);border-radius:10px;padding:10px 12px}
+.mini-group-title{font-weight:700;font-size:13px;color:var(--accent-strong)}
+@media(max-width:880px){.cols-2,.cols-3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="flex between center mb12">
+    <div class="section-title">备课中心</div>
+  </div>
+  <div class="subnav mb12" id="lpNav">
+    <button class="sub-tab active" data-tab="plan"><span class="hico">📘</span>教案</button>
+    <button class="sub-tab" data-tab="sites"><span class="hico">🌐</span>常用备课网址</button>
+    <button class="sub-tab" data-tab="standard"><span class="hico">📜</span>课标</button>
+    <button class="sub-tab" data-tab="textbook"><span class="hico">📖</span>教材</button>
+  </div>
+
+  <!-- 1. 教案 -->
+  <section class="lp-panel" data-panel="plan">
+    <div class="flex between center mb12">
+      <div class="section-title">📚 教案备课台 <span class="muted" style="font-size:12px;font-weight:400">统编教材 · 双线组元</span></div>
+      <button class="btn">＋ 新建教案</button>
+    </div>
+    <div class="section-title mb12" style="font-size:14px">备课单元</div>
+    <div class="grid cols-3">
+      <div class="card res">
+        <div class="flex between center"><div class="res-ico" style="background:var(--green-soft)">📘</div><span class="tag green">人与自我</span></div>
+        <h3 style="margin:12px 0 6px;font-size:15px">七上 · 第一单元</h3>
+        <div class="muted" style="font-size:13px;line-height:1.6">人文主题：四季美景，亲近自然<br>语文要素：朗读重音停连，品味比喻拟人</div>
+        <div class="chips"><span class="tag">春</span><span class="tag">济南的冬天</span><span class="tag">雨的四季</span></div>
+        <div class="res-open">进入备课台 →</div>
+      </div>
+      <div class="card res">
+        <div class="flex between center"><div class="res-ico" style="background:var(--blue-soft)">📗</div><span class="tag blue">人与社会</span></div>
+        <h3 style="margin:12px 0 6px;font-size:15px">七上 · 第二单元</h3>
+        <div class="muted" style="font-size:13px;line-height:1.6">人文主题：至爱亲情，学会抒情<br>语文要素：体会思想感情，学写记叙文</div>
+        <div class="chips"><span class="tag">秋天的怀念</span><span class="tag">散步</span><span class="tag">散文诗二首</span></div>
+        <div class="res-open">进入备课台 →</div>
+      </div>
+      <div class="card res" style="border-style:dashed;align-items:center;justify-content:center;text-align:center">
+        <div class="res-ico" style="background:var(--accent-soft);color:var(--accent-strong);font-size:22px">＋</div>
+        <h3 style="margin:12px 0 6px;font-size:15px">新建单元</h3>
+        <div class="muted" style="font-size:13px">从教材目录快速创建备课单元</div>
+        <div class="res-open">开始创建 →</div>
+      </div>
+    </div>
+    <div class="section-title mt16 mb12" style="font-size:14px">我的教案</div>
+    <div class="card"><div class="list">
+      <div class="row"><div class="lp-ico">📄</div><div class="main"><div class="title">《春》教学设计</div><div class="meta">七年级上 · 目标：朗读赏析 · 更新 08-08</div></div><span class="tag green">已定稿</span></div>
+      <div class="row"><div class="lp-ico">📝</div><div class="main"><div class="title">《济南的冬天》说课稿</div><div class="meta">七年级上 · 目标：景物描写 · 更新 08-06</div></div><span class="tag blue">评审中</span></div>
+      <div class="row"><div class="lp-ico">🎬</div><div class="main"><div class="title">《散步》微课设计</div><div class="meta">七年级上 · 目标：亲情主题 · 更新 08-03</div></div><span class="tag amber">草稿</span></div>
+    </div></div>
+  </section>
+
+  <!-- 2. 常用备课网址 -->
+  <section class="lp-panel" data-panel="sites" style="display:none">
+    <div class="flex between center mb12">
+      <div class="section-title">🌐 常用备课网址</div>
+      <span class="muted" style="font-size:12px">点击卡片在新标签页打开</span>
+    </div>
+    <div class="grid cols-3">
+      <div class="card res">
+        <div class="flex between center"><div class="res-ico" style="background:var(--rc1)">📺</div><span class="tag">互动课件</span></div>
+        <h3 style="margin:12px 0 6px;font-size:15px">希沃白板</h3>
+        <div class="muted" style="font-size:13px;line-height:1.6">互动课件、课堂游戏、班级优化大师，海量学科模板一键套用。</div>
+        <div class="res-url">www.seewo.com</div><div class="res-open">打开网站 ↗</div>
+      </div>
+      <div class="card res">
+        <div class="flex between center"><div class="res-ico" style="background:var(--rc6)">🏫</div><span class="tag">官方资源</span></div>
+        <h3 style="margin:12px 0 6px;font-size:15px">国家中小学智慧教育平台</h3>
+        <div class="muted" style="font-size:13px;line-height:1.6">教育部官方免费资源：课程、电子教材、名师优课，对标新课标。</div>
+        <div class="res-url">basic.smartedu.cn</div><div class="res-open">打开网站 ↗</div>
+      </div>
+      <div class="card res">
+        <div class="flex between center"><div class="res-ico" style="background:var(--rc3)">📚</div><span class="tag">题库组卷</span></div>
+        <h3 style="margin:12px 0 6px;font-size:15px">学科网</h3>
+        <div class="muted" style="font-size:13px;line-height:1.6">K12 资源量最大之一，课件/教案/试卷可按知识点智能组卷。</div>
+        <div class="res-url">www.zxxk.com</div><div class="res-open">打开网站 ↗</div>
+      </div>
+      <div class="card res">
+        <div class="flex between center"><div class="res-ico" style="background:var(--rc4)">🌐</div><span class="tag">优课共享</span></div>
+        <h3 style="margin:12px 0 6px;font-size:15px">国家教育资源公共服务平台</h3>
+        <div class="muted" style="font-size:13px;line-height:1.6">一师一优课、名师工作室，跨区域优质课例共享。</div>
+        <div class="res-url">www.eduyun.cn</div><div class="res-open">打开网站 ↗</div>
+      </div>
+      <div class="card res">
+        <div class="flex between center"><div class="res-ico" style="background:var(--rc2)">💡</div><span class="tag">备课社区</span></div>
+        <h3 style="margin:12px 0 6px;font-size:15px">教育101</h3>
+        <div class="muted" style="font-size:13px;line-height:1.6">教师备课社区与素材集市，涵盖课件、学案与微课。</div>
+        <div class="res-url">教育101 官网</div><div class="res-open">打开网站 ↗</div>
+      </div>
+      <div class="card res">
+        <div class="flex between center"><div class="res-ico" style="background:var(--rc5)">🎬</div><span class="tag">优课视频</span></div>
+        <h3 style="margin:12px 0 6px;font-size:15px">教视网</h3>
+        <div class="muted" style="font-size:13px;line-height:1.6">全国优课视频、公开课实录，适合同课异构与观摩学习。</div>
+        <div class="res-url">www.sp910.com</div><div class="res-open">打开网站 ↗</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. 课标 -->
+  <section class="lp-panel" data-panel="standard" style="display:none">
+    <div class="flex between center mb12">
+      <div class="section-title">📜 课标 · 义务教育语文课程标准</div>
+      <button class="btn line sm">官方原文 ↗</button>
+    </div>
+    <div class="card mb12">
+      <div class="muted" style="font-size:13px;line-height:1.75">
+        <b>依据：《义务教育语文课程标准（2022 年版 2025 年日常修订版）》</b>（PDF，105 页）<br>
+        以下为核心框架摘要，完整条文以教育部官方原文为准。<span class="tag" style="margin-left:6px">课程性质</span> 综合性、实践性课程，<b>工具性与人文性的统一</b>。
+      </div>
+    </div>
+    <div class="grid cols-2">
+      <div class="card">
+        <h3 style="margin:0 0 10px;font-size:15px">🎯 核心素养 <span class="muted" style="font-size:12px;font-weight:400">（四大维度）</span></h3>
+        <div class="chips">
+          <span class="tag green">文化自信</span>
+          <span class="tag green">语言运用</span>
+          <span class="tag green">思维能力</span>
+          <span class="tag green">审美创造</span>
+        </div>
+        <div class="muted mt12" style="font-size:12.5px;line-height:1.7">学生通过课程学习逐步形成的正确价值观、必备品格和关键能力，是课程育人价值的集中体现。</div>
+      </div>
+      <div class="card">
+        <h3 style="margin:0 0 10px;font-size:15px">📐 学段要求 <span class="muted" style="font-size:12px;font-weight:400">（四个学段）</span></h3>
+        <div class="field" style="padding:6px 0;border-bottom:1px dashed var(--line)">
+          <span class="field-label" style="min-width:84px;font-size:12.5px">第一学段</span>
+          <span class="field-val" style="font-size:13px">1~2 年级 · 识字写字 + 阅读启蒙</span>
+        </div>
+        <div class="field" style="padding:6px 0;border-bottom:1px dashed var(--line)">
+          <span class="field-label" style="min-width:84px;font-size:12.5px">第二学段</span>
+          <span class="field-val" style="font-size:13px">3~4 年级 · 阅读与习作起步</span>
+        </div>
+        <div class="field" style="padding:6px 0;border-bottom:1px dashed var(--line)">
+          <span class="field-label" style="min-width:84px;font-size:12.5px">第三学段</span>
+          <span class="field-val" style="font-size:13px">5~6 年级 · 综合性阅读与表达</span>
+        </div>
+        <div class="field" style="padding:6px 0">
+          <span class="field-label" style="min-width:84px;font-size:12.5px">第四学段</span>
+          <span class="field-val" style="font-size:13px">7~9 年级 · 思辨性阅读与文学鉴赏</span>
+        </div>
+      </div>
+    </div>
+    <div class="card mt16">
+      <h3 style="margin:0 0 6px;font-size:15px">🧩 六大学习任务群 <span class="muted" style="font-size:12px;font-weight:400">（按内在逻辑关联的系列语文实践活动）</span></h3>
+      <div class="muted" style="font-size:12px;line-height:1.7;margin-bottom:12px">围绕特定学习主题，体现情境性、实践性、综合性，共同指向学生核心素养发展。</div>
+      <div class="grid cols-3">
+        <div class="mini-group">
+          <div class="mini-group-title"><span class="tag" style="background:var(--accent-soft);color:var(--accent-strong);font-weight:600">基础型 1</span></div>
+          <div class="chips mt8"><span class="tag">语言文字积累与梳理</span></div>
+          <div class="muted" style="font-size:11.5px;line-height:1.6;margin-top:6px">积累语言材料和语言经验，形成良好语感，掌握运用规范。</div>
+        </div>
+        <div class="mini-group">
+          <div class="mini-group-title"><span class="tag" style="background:var(--accent-soft);color:var(--accent-strong);font-weight:600">发展型 3</span></div>
+          <div class="chips mt8">
+            <span class="tag">实用性阅读与交流</span>
+            <span class="tag">文学阅读与创意表达</span>
+            <span class="tag">思辨性阅读与表达</span>
+          </div>
+          <div class="muted" style="font-size:11.5px;line-height:1.6;margin-top:6px">满足生活/学校/社会交流需要 → 文学体验 → 思维发展。</div>
+        </div>
+        <div class="mini-group">
+          <div class="mini-group-title"><span class="tag" style="background:var(--accent-soft);color:var(--accent-strong);font-weight:600">拓展型 2</span></div>
+          <div class="chips mt8"><span class="tag">整本书阅读</span><span class="tag">跨学科学习</span></div>
+          <div class="muted" style="font-size:11.5px;line-height:1.6;margin-top:6px">提升阅读视野与综合素养，跨学科整合。</div>
+        </div>
+      </div>
+    </div>
+    <div class="card mt16">
+      <h3 style="margin:0 0 10px;font-size:15px">💡 教学建议 <span class="muted" style="font-size:12px;font-weight:400">（用于教案与教材分析）</span></h3>
+      <div class="muted" style="font-size:13px;line-height:1.9">
+        • 立足核心素养，<b>充分发挥语文课程育人功能</b>；<br>
+        • 构建语文学习任务群，<b>注重阶段性与发展性</b>；<br>
+        • 突出课程内容的<b>时代性和典范性</b>，加强课程内容整合；<br>
+        • 增强课程实施的<b>情境性和实践性</b>，促进学习方式变革；<br>
+        • 倡导课程评价的<b>过程性和整体性</b>，重视评价的导向作用。
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. 教材 -->
+  <section class="lp-panel" data-panel="textbook" style="display:none">
+    <div class="flex between center mb12">
+      <div class="section-title">📖 教材 · 外接入口</div>
+      <span class="muted" style="font-size:12px">网页资源直接打开；小程序请在微信中搜索</span>
+    </div>
+    <div class="grid cols-3">
+      <div class="card res">
+        <div class="flex between center"><div class="res-ico" style="background:var(--green-soft)">📘</div><span class="tag green">网页端</span></div>
+        <h3 style="margin:12px 0 6px;font-size:15px">国家中小学智慧教育平台 · 电子教材</h3>
+        <div class="muted" style="font-size:13px;line-height:1.6">教育部官方电子课本，按年级/版本在线预览与下载，免费正版。</div>
+        <div class="res-url">basic.smartedu.cn/tchMaterial</div><div class="res-open">打开网页 ↗</div>
+      </div>
+      <div class="card res">
+        <div class="flex between center"><div class="res-ico" style="background:var(--purple-soft)">💬</div><span class="tag purple">微信小程序</span></div>
+        <h3 style="margin:12px 0 6px;font-size:15px">人教版教材学习</h3>
+        <div class="muted" style="font-size:13px;line-height:1.6">人教版教材同步学：课文朗读、知识点、课后题讲解，随身听读。</div>
+        <div class="res-url">微信小程序</div><div class="res-open">微信打开小程序 ↗</div>
+      </div>
+      <div class="card res">
+        <div class="flex between center"><div class="res-ico" style="background:var(--purple-soft)">📱</div><span class="tag purple">微信小程序</span></div>
+        <h3 style="margin:12px 0 6px;font-size:15px">电子版教科书</h3>
+        <div class="muted" style="font-size:13px;line-height:1.6">全学段电子课本集合，支持目录跳转、字号调节与离线查阅。</div>
+        <div class="res-url">微信小程序</div><div class="res-open">微信打开小程序 ↗</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+<script>
+document.querySelectorAll('#lpNav .sub-tab').forEach(function(b){
+  b.addEventListener('click', function(){
+    var v = b.dataset.tab;
+    document.querySelectorAll('#lpNav .sub-tab').forEach(function(x){ x.classList.toggle('active', x===b); });
+    document.querySelectorAll('.lp-panel').forEach(function(p){ p.style.display = p.dataset.panel===v ? 'block' : 'none'; });
+  });
+});
+</script>
+</body>
+</html>
