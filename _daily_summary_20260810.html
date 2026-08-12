@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>语寓原型 · 2026-08-10 工作总览</title>
+<style>
+  :root{ --accent:#6ea8dc; --accent-soft:#eaf3fb; --accent-strong:#3f7fc0; --bg:#eef5fb; --line:#dbe6f0; --muted:#7b8a99; }
+  *{ box-sizing:border-box; }
+  body{ background:var(--bg); color:#223; margin:0; font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; line-height:1.6; }
+  .wrap{ max-width:980px; margin:0 auto; padding:30px 20px 70px; }
+  .head{ background:linear-gradient(120deg,var(--accent-soft),#fff); border:1px solid var(--line); border-radius:16px; padding:26px 28px; margin-bottom:24px; }
+  .head h1{ margin:0 0 6px; font-size:26px; }
+  .head .sub{ color:var(--muted); font-size:14px; }
+  .head .pill{ display:inline-block; margin-top:10px; font-size:12px; background:#fff; border:1px solid var(--line); border-radius:999px; padding:4px 12px; color:var(--accent-strong); }
+  .stat{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:26px; }
+  .stat .box{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px; text-align:center; }
+  .stat .n{ font-size:28px; font-weight:800; color:var(--accent-strong); }
+  .stat .l{ font-size:12px; color:var(--muted); margin-top:2px; }
+
+  .theme{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:20px 24px; margin-bottom:16px; }
+  .theme h2{ margin:0 0 4px; font-size:18px; display:flex; align-items:center; gap:10px; }
+  .theme h2 .dot{ width:10px; height:10px; border-radius:50%; background:var(--accent); }
+  .theme .tline{ font-size:13px; color:var(--muted); margin-bottom:12px; }
+  .item{ display:flex; gap:10px; padding:8px 0; border-top:1px dashed var(--line); }
+  .item:first-of-type{ border-top:none; }
+  .item .tag{ flex:0 0 auto; font-size:11px; font-weight:700; padding:2px 9px; border-radius:999px; background:var(--accent-soft); color:var(--accent-strong); height:fit-content; margin-top:2px; }
+  .item .it-b{ flex:1; font-size:13.5px; }
+  .item .it-b b{ color:#1a2a3a; }
+
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+  .panel{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:18px 22px; }
+  .panel h3{ margin:0 0 10px; font-size:15px; }
+  .panel ul{ margin:0; padding-left:18px; font-size:13px; }
+  .panel li{ margin:5px 0; }
+  .ok{ color:#2e9e5b; font-weight:700; }
+  .wait{ color:#c9892f; font-weight:700; }
+  .code{ background:#f6f9fc; border:1px solid var(--line); border-radius:10px; padding:12px 14px; font-size:12.5px; font-family:ui-monospace,Menlo,Consolas,monospace; color:#334; margin-top:8px; }
+  .note{ background:var(--accent-soft); border-radius:12px; padding:14px 18px; font-size:13px; color:#335; margin-top:8px; }
+  .foot{ text-align:center; color:var(--muted); font-size:12px; margin-top:30px; line-height:1.9; }
+  @media(max-width:680px){ .stat{ grid-template-columns:repeat(2,1fr);} .grid2{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="head">
+    <h1>🐸 语寓原型 · 2026-08-10 工作总览</h1>
+    <div class="sub">语文教师一站式工作台原型 · 单日完成 7 条主线、20+ 子项</div>
+    <span class="pill">浅蓝统一框架 · 纯前端 vanilla JS · 数据驱动</span>
+  </div>
+
+  <div class="stat">
+    <div class="box"><div class="n">7</div><div class="l">工作主线</div></div>
+    <div class="box"><div class="n">21/21</div><div class="l">冒烟测试</div></div>
+    <div class="box"><div class="n">2</div><div class="l">新功能模块</div></div>
+    <div class="box"><div class="n">1</div><div class="l">设计规范沉淀</div></div>
+  </div>
+
+  <!-- 主线 -->
+  <div class="theme">
+    <h2><span class="dot"></span>主线一 · 智能体「挖挖」接入（零配置可跑）</h2>
+    <div class="tline">悬浮助手 + 规则引擎兜底 + 可插拔 LLM 升级为自由对话</div>
+    <div class="item"><span class="tag">能力</span><div class="it-b">悬浮按钮 🐸 + 抽屉面板；加/完成待办、今天课表、下节课、设提醒（应用内 toast + 浏览器 Notification）、学情、教案、帮助等意图。</div></div>
+    <div class="item"><span class="tag">品牌</span><div class="it-b">品牌化命名「挖挖」+ 浅绿拟人青蛙形象 <b>img/wawa.png</b>，设置页配 Key 后走 OpenAI 兼容 <b>/chat/completions</b>。</div></div>
+    <div class="item"><span class="tag">持久化</span><div class="it-b">待办/提醒落 localStorage（<b>yu_todos</b> / <b>yu_agent_reminders</b> / <b>yu_agent_cfg</b>）。</div></div>
+  </div>
+
+  <div class="theme">
+    <h2><span class="dot"></span>主线二 · 统一视觉设计（浅蓝框架 + 规范）</h2>
+    <div class="tline">全站单一强调色，消除"各页面各自配色"，并形成可复用规范</div>
+    <div class="item"><span class="tag">色调</span><div class="it-b">强调色锁定 <b>--accent:#6ea8dc</b>（浅蓝非青绿），呼应挖挖；令牌 --accent-soft/strong、--bg 统一。</div></div>
+    <div class="item"><span class="tag">规范</span><div class="it-b"><b>css/style.css 文件头注释</b>沉淀设计语言：圆角两档(12/10)、阴影一档、间距 8 倍数、字号 20/16/14/12、组件约定；明确"禁止新造一次性样式"。</div></div>
+    <div class="item"><span class="tag">收口</span><div class="it-b">修复 .tag.red 误映射、收口零散渐变、统一按钮/子导航圆角，全站联动一致。</div></div>
+  </div>
+
+  <div class="theme">
+    <h2><span class="dot"></span>主线三 · 备课中心完整重构</h2>
+    <div class="tline">从导航到内容、从聚合到导出的一次性整建</div>
+    <div class="item"><span class="tag">导航</span><div class="it-b">二级任务由纵向改<b>横向胶囊图标</b>导航（图标缩小、整行排列、下滑友好）。</div></div>
+    <div class="item"><span class="tag">4 页</span><div class="it-b">教案（图标卡+新建/编辑/导出）/ 常用备课网址（按板块聚合+增删+一键预览）/ 课标（按 PDF 校正）/ 教材。</div></div>
+    <div class="item"><span class="tag">聚合</span><div class="it-b">网址按 5 板块聚合、自动保存本机、+添加、单条删除；「一课一标·新课标对应」按年级/单元联动渲染学段/任务群/建议。</div></div>
+    <div class="item"><span class="tag">资料</span><div class="it-b">上传 Word/PDF/图片 → 自动识别梳理草案（纯前端按文件名兜底，深度解析需接 mammoth/pdf.js/tesseract）。</div></div>
+  </div>
+
+  <div class="theme">
+    <h2><span class="dot"></span>主线四 · 班主任事务提效（两大新功能）</h2>
+    <div class="tline">文档智能生成 + 操行评语生成，均支持智能体润色（可选）</div>
+    <div class="item"><span class="tag">文档</span><div class="it-b"><b>7 类模板</b>：工作计划/总结/学情分析/操行评语/突发事件说明/班会提纲/汇报材料初稿；弹窗表单 → 生成 → 导出 <b>.doc</b>。</div></div>
+    <div class="item"><span class="tag">评语</span><div class="it-b">依据<b>日常表现积分 + 四维成绩 + 个性化亮点 + 趋势</b>自动撰写真实评语；全班一键生成 / 单条生成 / 预览编辑 / 导出 .doc；落 localStorage <b>yu_comments</b>。</div></div>
+  </div>
+
+  <div class="theme">
+    <h2><span class="dot"></span>主线五 · 工作台与待办管理</h2>
+    <div class="tline">让"今天该干什么"一目了然、不漏事</div>
+    <div class="item"><span class="tag">续命条</span><div class="it-b">顶部署假倒计时条（节假日放假），跨二级标签常驻。</div></div>
+    <div class="item"><span class="tag">待办</span><div class="it-b">按<b>优先级+截止</b>自动排序；「＋新增待办」手建；「✂拆解通知」把学校通知按句切分、识别截止时间+优先级，批量生成待办。</div></div>
+    <div class="item"><span class="tag">真功能</span><div class="it-b">顶部搜索真实化（下拉跳转）、设置页真保存、待办角标动态化、多端同步诚实化为「数据与同步」。</div></div>
+  </div>
+
+  <div class="theme">
+    <h2><span class="dot"></span>主线六 · 内容准确性（课标 PDF 校对）</h2>
+    <div class="tline">以 2022 年版 2025 年日常修订版 PDF（105 页，图片型）为权威源校对</div>
+    <div class="item"><span class="tag">确认</span><div class="it-b">核心素养 4 维；学段要求 = 四个学段（非"四大语文实践"，已修正预览错误）；六大学习任务群三层结构。</div></div>
+  </div>
+
+  <div class="theme">
+    <h2><span class="dot"></span>主线七 · 工程质量（专业评估 + P0/P1 整改）</h2>
+    <div class="tline">以专业网页工程师视角全量诊断，落实关键整改</div>
+    <div class="item"><span class="tag">P0</span><div class="it-b">待办角标动态化、设置页真保存、搜索框真实、多端同步诚实化、演示按钮诚实化（新建教案改真 CRUD）。</div></div>
+    <div class="item"><span class="tag">P1</span><div class="it-b">统一强调色（回 :root 浅蓝）、统一子导航（胶囊图标）、修复响应式断点顺序。</div></div>
+    <div class="item"><span class="tag">未做</span><div class="it-b">P1-4 路由、P1-5 拆文件、P2 五项（已诚实告知用户）。</div></div>
+  </div>
+
+  <!-- 状态 -->
+  <div class="grid2">
+    <div class="panel">
+      <h3>✅ 当前状态</h3>
+      <ul>
+        <li><span class="ok">已完成</span>：挖挖智能体、浅蓝框架+规范、备课中心全重构、文档/评语两大新功能、待办增强+拆解、课标校对、P0/P1 整改、演示步骤卡。</li>
+        <li><span class="ok">已验证</span>：node --check 通过；jsdom 冒烟 21/21 全绿；本地预览 HTTP 200。</li>
+        <li><span class="ok">演示说明</span>：<b>_demo_guide.html</b>（四功能步骤卡，微缩还原）。</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>⏳ 待办 / 边界</h3>
+      <ul>
+        <li><span class="wait">部署</span>：CloudStudio 持续 400（服务端故障），改用本地预览，未上线。</li>
+        <li><span class="wait">深度解析</span>：Word/PDF/图片图文 OCR 需接 mammoth/pdf.js/tesseract 或后端 LLM。</li>
+        <li><span class="wait">可选</span>：P1-4 路由、P1-5 拆文件、P2 打磨（空态/可访问性/XSS 等）。</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>🔗 如何预览 & 关键文件</h3>
+    <div class="code">本地预览：http://localhost:8126/        （python -m http.server 8126 --bind 127.0.0.1，后台运行）
+演示说明：http://localhost:8126/_demo_guide.html
+总览文档：http://localhost:8126/_daily_summary_20260810.html</div>
+    <div class="code">prototype/
+├─ index.html              入口（含 #agentLauncher 悬浮按钮）
+├─ css/style.css          设计令牌 + 规范注释 + 全部样式
+├─ js/app.js              核心逻辑（views / handleAction / 四大功能）
+├─ js/data.js             数据模型（DB：sites/todos/students/lessonPlans…）
+├─ js/api.js              可写 BASE（setBase）
+├─ img/wawa.png           挖挖形象
+├─ _demo_guide.html       四功能步骤卡（演示文件）
+└─ _lesson_preview.html   备课中心预览参照（演示文件）</div>
+    <div class="note">说明：演示/预览类文件（_demo_guide / _lesson_preview / _daily_summary）未被 index.html 引用，仅作参照，可随时删除，不影响原型运行与部署。</div>
+  </div>
+
+  <div class="foot">
+    语寓原型 · 2026-08-10 总览 ｜ 浅蓝统一框架 ｜ 纯前端 SPA ｜ 智能体润色可选<br>
+    本总览为单日工作整理，细节见 .workbuddy/memory/2026-08-10.md，长期约定见 MEMORY.md
+  </div>
+
+</div>
+</body>
+</html>
