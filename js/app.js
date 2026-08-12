@@ -88,13 +88,13 @@ const views = {
     <div class="section-title mt16 mb12" style="font-size:14px">我的教案</div>
     <div class="card"><div class="list">
       ${DB.lessonPlans.map((p,i)=>`
-        <div class="row"><div class="lp-ico">${['📄','📝','🎬'][i%3]}</div><div class="main"><div class="title">${p.title}</div>
-          <div class="meta">${p.unit} · 目标：${p.obj} · 更新 ${p.updated}</div></div>
-          <span class="tag ${typeColor[p.status]||'gray'}">${p.status}</span>
+        <div class="row"><div class="lp-ico">${['📄','📝','🎬'][i%3]}</div><div class="main"><div class="title">${escapeHtml(p.title)}</div>
+          <div class="meta">${escapeHtml(p.unit)} · 目标：${escapeHtml(p.obj)} · 更新 ${escapeHtml(p.updated)}</div></div>
+          <span class="tag ${escapeAttr(typeColor[p.status]||'gray')}">${escapeHtml(p.status)}</span>
           <div style="display:flex;gap:6px">
-            <button class="btn line sm" data-action="editPlan" data-id="${p.id}">编辑</button>
-            <button class="btn line sm" data-action="exportPlan" data-id="${p.id}">导出</button>
-            <button class="btn line sm" data-action="delPlan" data-id="${p.id}" title="删除教案">删除</button>
+            <button class="btn line sm" data-action="editPlan" data-id="${escapeAttr(p.id)}">编辑</button>
+            <button class="btn line sm" data-action="exportPlan" data-id="${escapeAttr(p.id)}">导出</button>
+            <button class="btn line sm" data-action="delPlan" data-id="${escapeAttr(p.id)}" title="删除教案">删除</button>
           </div></div>`).join('')}
     </div></div>`;
   },
@@ -240,15 +240,15 @@ const views = {
       <span class="muted" style="font-size:12px">网页资源直接打开；小程序请在微信中搜索</span></div>
     <div class="grid cols-3" id="bookGrid">
       ${books.map(b=>`
-        <div class="card res" ${b.type==='web'?`data-action="openSite" data-url="${b.url}" title="点击打开「${b.name}」"`:''}>
+        <div class="card res" ${b.type==='web'?`data-action="openSite" data-url="${escapeAttr(b.url)}" title="点击打开「${escapeHtml(b.name)}」"`:''}>
           <div class="flex between center">
             <div class="res-ico" style="background:var(--${b.type==='mp'?'purple-soft':'green-soft'})">${b.type==='mp'?'💬':'📘'}</div>
-            <span class="tag ${b.type==='mp'?'purple':'green'}">${b.note}</span></div>
-          <h3 style="margin:12px 0 6px;font-size:15px">${b.name}</h3>
-          <div class="muted" style="font-size:13px;line-height:1.6">${b.desc}</div>
-          <div class="res-url">${b.type==='mp'?'微信小程序':b.url.replace(/^https?:\/\//,'')}</div>
+            <span class="tag ${b.type==='mp'?'purple':'green'}">${escapeHtml(b.note)}</span></div>
+          <h3 style="margin:12px 0 6px;font-size:15px">${escapeHtml(b.name)}</h3>
+          <div class="muted" style="font-size:13px;line-height:1.6">${escapeHtml(b.desc)}</div>
+          <div class="res-url">${b.type==='mp'?'微信小程序':escapeHtml(b.url.replace(/^https?:\/\//,''))}</div>
           ${b.type==='mp'
-            ? `<div class="res-open" data-action="openMp" data-mp="${b.mp}">微信打开小程序</div>`
+            ? `<div class="res-open" data-action="openMp" data-mp="${escapeAttr(b.mp)}">微信打开小程序</div>`
             : `<div class="res-open">打开网页 ↗</div>`}
         </div>`).join('')}
     </div>`;
@@ -339,10 +339,10 @@ const views = {
             <span class="tag blue">${e.subject}</span>
             <span class="tag ${platColor[e.platform]||'gray'}">${e.platform}</span>
             <span class="tag gray">⏱ ${e.duration}</span></div>
-          <div class="mt16 muted" style="font-size:12px">${e.fileType?('📎 '+e.fileName+' · '):''}${e.note||''}</div>
+          <div class="mt16 muted" style="font-size:12px">${escapeHtml(e.fileType?('📎 '+e.fileName+' · '):'')}${escapeHtml(e.note||'')}</div>
           <div class="flex gap8 mt16">
-            ${e.url?`<a class="btn line sm" href="${e.url}" target="_blank" rel="noopener">▶ 打开</a>`:`<button class="btn line sm" data-action="previewFile" data-f="${e.fileName||''}">▶ 播放</button>`}
-            <button class="btn line sm" data-action="copyLink" data-url="${e.url||''}">复制链接</button>
+            ${e.url?`<a class="btn line sm" href="${escapeAttr(e.url)}" target="_blank" rel="noopener">▶ 打开</a>`:`<button class="btn line sm" data-action="previewFile" data-f="${escapeAttr(e.fileName||'')}">▶ 播放</button>`}
+            <button class="btn line sm" data-action="copyLink" data-url="${escapeAttr(e.url||'')}">复制链接</button>
           </div>
         </div>`).join('')}
     </div>`;
@@ -482,7 +482,7 @@ const views = {
             <div class="cert-name">${x.award}</div>
           </div>
           <div class="honor-body">
-            <div class="honor-title">${x.title}</div>
+            <div class="honor-title">${escapeHtml(x.title)}</div>
             <div class="kpi-row">
               <span class="tag ${catColor[x.cat]}">${x.cat}</span>
               <span class="tag blue">${x.type}</span>
@@ -637,10 +637,10 @@ function wordView(){
   </div>
   ${lists.length ? `<div class="grid cols-2">`+lists.map(w=>`
     <div class="card">
-      <div class="flex between"><h3 style="margin:0">${w.title}</h3><span class="tag purple">${w.grade||'—'}</span></div>
+      <div class="flex between"><h3 style="margin:0">${escapeHtml(w.title)}</h3><span class="tag purple">${escapeHtml(w.grade||'—')}</span></div>
       <div class="list mt16">${w.words.map(x=>`
-        <div class="row"><div class="main"><div class="title">${x.w} <span class="muted" style="font-size:12px">${x.py}</span></div>
-          <div class="meta">${x.mean}</div></div></div>`).join('')}</div>
+        <div class="row"><div class="main"><div class="title">${escapeHtml(x.w)} <span class="muted" style="font-size:12px">${escapeHtml(x.py)}</span></div>
+          <div class="meta">${escapeHtml(x.mean)}</div></div></div>`).join('')}</div>
       <div class="flex gap8 mt12"><button class="btn sm" data-action="wordSelfTest" data-id="${w.id}">🎴 识记自测</button></div>
     </div>`).join('')+`</div>`
     : `<div class="card muted">暂无字词清单，点击右上角「上传字词清单」添加（支持 CSV / 文本，每行：词语,拼音,释义）。</div>`}
@@ -698,8 +698,8 @@ function poemView(){
   <div class="grid cols-2 mb12">
     ${poems.map(p=>`
       <div class="card">
-        <div class="flex between"><h3 style="margin:0">${p.title}</h3><span class="tag green">${p.dynasty}·${p.author}</span></div>
-        <div class="muted mt12" style="font-size:13px;line-height:1.7">${p.text}</div>
+        <div class="flex between"><h3 style="margin:0">${escapeHtml(p.title)}</h3><span class="tag green">${escapeHtml(p.dynasty)}·${escapeHtml(p.author)}</span></div>
+        <div class="muted mt12" style="font-size:13px;line-height:1.7">${escapeHtml(p.text)}</div>
         <div class="flex gap8 mt12"><button class="btn sm" data-action="poemUpload" data-id="${p.id}">📷 上传默写图片识别批改</button>
           <input type="file" class="poemFile" accept="image/*" data-id="${p.id}" style="display:none"></div>
       </div>`).join('')}
@@ -726,9 +726,9 @@ function renderPoemResult(p, text){
   const box = $('#poemResult');
   box.innerHTML = `
    <div class="card mt12">
-     <div class="flex between"><h3 style="margin:0">${p.title} · 默写批改</h3>
+     <div class="flex between"><h3 style="margin:0">${escapeHtml(p.title)} · 默写批改</h3>
        <span class="muted" style="font-size:12px">识别文字可手动修正后比对</span></div>
-     <textarea id="poemOcr_${p.id}" class="field mt12" rows="3">${text}</textarea>
+     <textarea id="poemOcr_${p.id}" class="field mt12" rows="3">${escapeHtml(text)}</textarea>
      <div class="flex gap8 mt12"><button class="btn sm" data-action="poemDiff" data-id="${p.id}">比对原文并评分</button></div>
      <div id="poemDiff_${p.id}" class="mt12"></div>
    </div>`;
@@ -759,13 +759,13 @@ function readingExView(){
   </div>
   ${exs.length ? exs.map(r=>`
     <div class="card mb12">
-      <div class="flex between"><h3 style="margin:0">${r.title}</h3><span class="tag blue">${r.grade||'—'}</span></div>
-      <div class="muted mt12" style="font-size:13px;line-height:1.8">${r.passage}</div>
+      <div class="flex between"><h3 style="margin:0">${escapeHtml(r.title)}</h3><span class="tag blue">${escapeHtml(r.grade||'—')}</span></div>
+      <div class="muted mt12" style="font-size:13px;line-height:1.8">${escapeHtml(r.passage)}</div>
       <div class="list mt16">
         ${r.questions.map((q,i)=>`
-          <div class="row col" data-q="${r.id}_${i}">
-            <div class="main"><div class="title">${i+1}. ${q.q}</div>
-              <div class="meta hide-ans" style="display:none;color:var(--brand)">答：${q.a}</div></div>
+          <div class="row col" data-q="${escapeAttr(r.id)}_${i}">
+            <div class="main"><div class="title">${i+1}. ${escapeHtml(q.q)}</div>
+              <div class="meta hide-ans" style="display:none;color:var(--brand)">答：${escapeHtml(q.a)}</div></div>
             <button class="btn line sm" data-action="readingReveal" data-q="${r.id}_${i}">显示答案</button>
           </div>`).join('')}
       </div>
@@ -820,7 +820,7 @@ function essayView(){
     <div class="flex gap8 mt12 wrap">
       <label class="btn sm" for="essayImg">📷 上传作文图片</label>
       <input type="file" id="essayImg" accept="image/*" style="display:none">
-      <select class="field sm" id="essayCritSel" style="width:auto">${crit.map(c=>`<option value="${c.id}">${c.title}</option>`).join('')}</select>
+      <select class="field sm" id="essayCritSel" style="width:auto">${crit.map(c=>`<option value="${escapeAttr(c.id)}">${escapeHtml(c.title)}</option>`).join('')}</select>
       <button class="btn sm line" data-action="essaySmartGrade">⚙ 智能初评</button>
     </div>
     <div id="essayGradeBox" class="mt16"></div>
@@ -924,6 +924,10 @@ function diffChinese(correct, user){
   return { html, score, total:c.length, matched };
 }
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+// 属性上下文转义（用于 class / data-* 等双引号属性值，防属性型 XSS）
+function escapeAttr(s){ return escapeHtml(s); }
+// 允许写回 localStorage 的应用自身键白名单（导入/恢复时拒绝未知键，阻断键注入）
+const LS_WHITELIST = ['yu_todo_done','yu_todos','yu_sites','yu_hw','yu_lesson_plans','yu_schedule','yu_periods','yu_class_remind','yu_agent_cfg','yu_agent_reminders','yu_comments','yu_bg','yuyu_api_base','yuyu_avatar','yuyu_name','yu_github_cfg','yu_github_last'];
 
 // 一课一标·新课标对应工具：根据学段渲染右侧对应面板
 function renderCsTarget(grade, unit, stage){
@@ -1053,12 +1057,12 @@ function dashboardOverview(){
     ${sortedTodos.length===0
       ? `<div class="todo-empty">🎉 今日待办已全部完成，奖励一朵小红花！</div>`
       : `<div class="list todo-list">${sortedTodos.map(t=>`
-        <div class="row todo-row" data-id="${t.id}">
-          <button class="todo-check" data-action="doneTodo" data-id="${t.id}" title="标记完成">✓</button>
+        <div class="row todo-row" data-id="${escapeAttr(t.id)}">
+          <button class="todo-check" data-action="doneTodo" data-id="${escapeAttr(t.id)}" title="标记完成">✓</button>
           <div class="main"><div class="title">${escapeHtml(t.t)}</div>
-            <div class="meta">需处理 ${t.n} 项　·　截止 ${t.deadline||'未设'}　·　${prioLabel(t.prio)}优先级</div></div>
-          <span class="tag ${prioTag(t.prio)}">${prioLabel(t.prio)}</span>
-          <span class="tag ${t.tag}">${tagMap[t.tag]||'去处理'}</span>
+            <div class="meta">需处理 ${escapeHtml(t.n)} 项　·　截止 ${escapeHtml(t.deadline||'未设')}　·　${prioLabel(t.prio)}优先级</div></div>
+          <span class="tag ${escapeAttr(prioTag(t.prio))}">${prioLabel(t.prio)}</span>
+          <span class="tag ${escapeAttr(t.tag)}">${tagMap[t.tag]||'去处理'}</span>
         </div>`).join('')}</div>`}
   </div>`;
 }
@@ -1607,7 +1611,7 @@ function workCalendarView(){
         return `<div class="cal-cell ${isToday?'today':''} ${ho?'holiday':''}">
           <div class="cal-day">${c}</div>
           ${ho?`<div class="cal-ev hol">🏖 ${ho.name}</div>`:''}
-          ${ev.map(e=>`<div class="cal-ev ${EV_CLS[e.type]||'school'}">${e.title}</div>`).join('')}
+          ${ev.map(e=>`<div class="cal-ev ${escapeAttr(EV_CLS[e.type]||'school')}">${escapeHtml(e.title)}</div>`).join('')}
         </div>`;
       }).join('')}</div>
       <div class="muted mt12" style="font-size:12px">点击"上传校园工作日历"可导入 CSV（日期,主题,类型）或 Excel（演示解析）；校历假期以绿色高亮显示。</div>
@@ -1876,8 +1880,8 @@ function analyticsOverview(){
         <div class="flex between"><h3>👤 学生个体诊断</h3>${expBtn('ana-student')}</div>
         <table class="mt16"><thead><tr><th>学生</th><th>语言</th><th>思维</th><th>审美</th><th>文化</th><th></th></tr></thead>
         <tbody>${DB.students.map(s=>`
-          <tr><td><b>${s.name}</b></td><td>${s.lang}</td><td class="${s.think<60?'down':''}">${s.think}</td>
-            <td>${s.aesthetic}</td><td>${s.culture}</td>
+          <tr><td><b>${escapeHtml(s.name)}</b></td><td>${escapeHtml(s.lang)}</td><td class="${s.think<60?'down':''}">${escapeHtml(s.think)}</td>
+            <td>${escapeHtml(s.aesthetic)}</td><td>${escapeHtml(s.culture)}</td>
             <td><span class="tag ${s.trend=='up'?'green':'red'}">${s.trend=='up'?'↑进步':'↓预警'}</span></td></tr>`).join('')}
         </tbody></table>
       </div>
@@ -1957,11 +1961,11 @@ function scoreResultCard(examKey, r){
   return `
     <div class="card">
       <div class="flex between mb12">
-        <div class="section-title" style="margin:0">📄 ${ex.name} · ${r.name} 成绩</div>
-        <span class="tag blue">班名 ${r.rank} / ${ex.rows.length}</span>
+        <div class="section-title" style="margin:0">📄 ${escapeHtml(ex.name)} · ${escapeHtml(r.name)} 成绩</div>
+        <span class="tag blue">班名 ${escapeHtml(r.rank)} / ${ex.rows.length}</span>
       </div>
-      <table class="mt16"><thead><tr><th>科目</th>${sub.map(s=>`<th>${s}</th>`).join('')}<th>总分</th></tr></thead>
-        <tbody><tr><td><b>得分</b></td>${sub.map(s=>`<td>${r.s[s]}</td>`).join('')}<td><b>${r.total}</b></td></tr></tbody></table>
+      <table class="mt16"><thead><tr><th>科目</th>${sub.map(s=>`<th>${escapeHtml(s)}</th>`).join('')}<th>总分</th></tr></thead>
+        <tbody><tr><td><b>得分</b></td>${sub.map(s=>`<td>${escapeHtml(r.s[s])}</td>`).join('')}<td><b>${escapeHtml(r.total)}</b></td></tr></tbody></table>
       <div class="muted mt12" style="font-size:12px">查询结果仅本人可见；学校留存原始成绩用于学情分析</div>
     </div>`;
 }
@@ -1989,12 +1993,12 @@ function talkRecordsView(){
 }
 
 function talkRow(r,typeColor){
-  return `<div class="row talk" data-type="${r.type}">
+  return `<div class="row talk" data-type="${escapeAttr(r.type)}">
     <div class="main">
-      <div class="title">${r.target} · <span class="tag ${typeColor[r.type]}">${r.type}</span> · <span class="muted" style="font-weight:400">${r.method}</span></div>
-      <div class="meta">🕒 ${r.date}</div>
-      <div class="meta">谈话内容：${r.content}</div>
-      <div class="meta">反馈效果：${r.effect}</div>
+      <div class="title">${escapeHtml(r.target)} · <span class="tag ${escapeAttr(typeColor[r.type])}">${escapeHtml(r.type)}</span> · <span class="muted" style="font-weight:400">${escapeHtml(r.method)}</span></div>
+      <div class="meta">🕒 ${escapeHtml(r.date)}</div>
+      <div class="meta">谈话内容：${escapeHtml(r.content)}</div>
+      <div class="meta">反馈效果：${escapeHtml(r.effect)}</div>
     </div>
   </div>`;
 }
@@ -2171,8 +2175,8 @@ function homeroomOverview(){
           <div class="row">
             <div class="lp-ico">${['📄','📝','🎬','🌟','💡'][i%5]}</div>
             <div class="main">
-              <div class="title">${s.name} <span class="tag ${s.trend=='up'?'green':'red'}">${s.trend=='up'?'↑进步':'↓预警'}</span> <span class="tag blue">积分 ${s.conduct}</span></div>
-              <div class="meta">语言 ${s.lang} · 思维 ${s.think} · 审美 ${s.aesthetic} · 文化 ${s.culture}</div>
+              <div class="title">${escapeHtml(s.name)} <span class="tag ${s.trend=='up'?'green':'red'}">${s.trend=='up'?'↑进步':'↓预警'}</span> <span class="tag blue">积分 ${escapeHtml(s.conduct)}</span></div>
+              <div class="meta">语言 ${escapeHtml(s.lang)} · 思维 ${escapeHtml(s.think)} · 审美 ${escapeHtml(s.aesthetic)} · 文化 ${escapeHtml(s.culture)}</div>
             </div>
             <div style="display:flex;gap:6px">
               <button class="btn line sm" data-action="genComment" data-id="${s.name}">${s.comment?'重新生成':'生成评语'}</button>
@@ -2271,11 +2275,11 @@ function studentInfoView(){
 function studentRow(s){
   const st = s.status==='在读' ? 'green' : (s.status==='休学'||s.status==='转学') ? 'amber' : 'blue';
   return `<tr>
-    <td><b>${s.name}</b></td><td>${s.gender}</td><td class="mono">${s.idNo}</td>
-    <td>${s.nation}</td><td class="mono">${s.stuNo}</td><td>${s.address}</td>
-    <td class="mono">${s.ssCard}</td><td>${s.parents}</td><td class="mono">${s.phone}</td>
-    <td class="mono">${s.parentId}</td>
-    <td><span class="tag ${st}">${s.status}</span></td></tr>`;
+    <td><b>${escapeHtml(s.name)}</b></td><td>${escapeHtml(s.gender)}</td><td class="mono">${escapeHtml(s.idNo)}</td>
+    <td>${escapeHtml(s.nation)}</td><td class="mono">${escapeHtml(s.stuNo)}</td><td>${escapeHtml(s.address)}</td>
+    <td class="mono">${escapeHtml(s.ssCard)}</td><td>${escapeHtml(s.parents)}</td><td class="mono">${escapeHtml(s.phone)}</td>
+    <td class="mono">${escapeHtml(s.parentId)}</td>
+    <td><span class="tag ${escapeAttr(st)}">${escapeHtml(s.status)}</span></td></tr>`;
 }
 
 function studentAidView(){
@@ -2302,11 +2306,11 @@ function studentAidView(){
 function studentAidRow(s){
   const st = s.status==='已认定' ? 'green' : s.status==='待审核' ? 'amber' : 'blue';
   return `<tr>
-    <td><b>${s.name}</b></td>
-    <td>${s.family}</td>
-    <td class="mono">${s.idNo}</td>
-    <td class="mono">${s.phone}</td>
-    <td><span class="tag ${st}">${s.status}</span></td></tr>`;
+    <td><b>${escapeHtml(s.name)}</b></td>
+    <td>${escapeHtml(s.family)}</td>
+    <td class="mono">${escapeHtml(s.idNo)}</td>
+    <td class="mono">${escapeHtml(s.phone)}</td>
+    <td><span class="tag ${escapeAttr(st)}">${escapeHtml(s.status)}</span></td></tr>`;
 }
 
 function classCommitteeView(){
@@ -2326,9 +2330,9 @@ function classCommitteeView(){
         <div class="list mt16">
           ${c.leaders.map(l=>`
             <div class="row"><div class="main">
-              <div class="title">${leaderIcon[l.role]||'•'} ${l.role}</div>
-              <div class="meta">任职：<b>${l.holder}</b></div>
-              <div class="meta">职责：${l.note}</div>
+              <div class="title">${leaderIcon[l.role]||'•'} ${escapeHtml(l.role)}</div>
+              <div class="meta">任职：<b>${escapeHtml(l.holder)}</b></div>
+              <div class="meta">职责：${escapeHtml(l.note)}</div>
             </div>
             <button class="btn line sm" data-action="editCommittee">调整</button></div>`).join('')}
         </div>
@@ -2336,7 +2340,7 @@ function classCommitteeView(){
       <div class="card">
         <h3>📝 各科课代表</h3>
         <div class="kpi-row mt16 wrap" style="gap:10px">
-          ${c.subjectReps.map(r=>`<span class="tag blue" style="font-size:13px">${r.subject} · ${r.holder}</span>`).join('')}
+          ${c.subjectReps.map(r=>`<span class="tag blue" style="font-size:13px">${escapeHtml(r.subject)} · ${escapeHtml(r.holder)}</span>`).join('')}
         </div>
         <div class="muted mt16" style="font-size:12px">课代表可由学科教师与学习委员协同调整；班委任期一般每学期民主改选一次</div>
         <div class="card" style="background:var(--accent-soft);margin-top:16px">
@@ -3027,9 +3031,13 @@ async function githubRestoreNow(){
     if(!res.ok){ toast('✗ 获取备份失败 ('+res.status+')'); return; }
     const j=await res.json();
     const snap=JSON.parse(b64ToUtf8(j.content));
-    const ls=snap.localStorage||{}; let n=0;
-    for(const k in ls){ try{ localStorage.setItem(k, ls[k]); n++; }catch(e){} }
-    toast('✓ 已恢复 '+n+' 项数据，即将刷新…');
+    const ls=snap.localStorage||{}; let n=0, skipped=0;
+    for(const k in ls){
+      if(!LS_WHITELIST.includes(k)){ skipped++; continue; } // 仅恢复应用键，拒绝未知键
+      let v=ls[k]; if(typeof v!=='string'){ try{ v=JSON.stringify(v); }catch(e){ v=String(v); } }
+      try{ localStorage.setItem(k, v); n++; }catch(e){}
+    }
+    toast('✓ 已恢复 '+n+' 项数据'+(skipped?('，跳过 '+skipped+' 项'):'')+'，即将刷新…');
     setTimeout(()=>{ try{ location.reload(); }catch(e){} }, 800);
   }catch(e){ toast('✗ 恢复失败：'+e.message); }
 }
@@ -3091,9 +3099,16 @@ async function importJsonBackup(file){
     const data = JSON.parse(text);
     const ls = (data && data.localStorage) || {};
     if(!data || typeof data!=='object' || Object.keys(ls).length===0){ toast('✗ 文件格式不正确（缺少 localStorage 数据）'); return false; }
-    let n=0;
-    for(const k in ls){ if(k.indexOf('yu_')===0 || k.indexOf('yuyu_')===0){ try{ localStorage.setItem(k, ls[k]); n++; }catch(e){} } }
-    toast('✓ 已读取 '+n+' 项，正在恢复…');
+    let n=0, skipped=0;
+    for(const k in ls){
+      if(!LS_WHITELIST.includes(k)){ skipped++; continue; } // 仅恢复应用键，拒绝未知键
+      let v = ls[k];
+      if(typeof v!=='string'){ try{ v=JSON.stringify(v); }catch(e){ v=String(v); } } // 规范化存储值，避免对象被强转
+      try{ localStorage.setItem(k, v); n++; }catch(e){}
+    }
+    // 关键数据结构基础校验：畸形 yu_todos 直接丢弃，避免后续解析异常
+    try{ const td=localStorage.getItem('yu_todos'); if(td && !Array.isArray(JSON.parse(td))){ localStorage.removeItem('yu_todos'); n=Math.max(0,n-1); } }catch(e){}
+    toast('✓ 已恢复 '+n+' 项'+(skipped?('，跳过 '+skipped+' 项非应用键'):'')+'，正在刷新…');
     setTimeout(()=>{ try{ location.reload(); }catch(e){} }, 700);
     return true;
   }catch(e){ toast('✗ 导入失败：'+(e.message||e)); return false; }
