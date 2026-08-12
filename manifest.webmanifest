@@ -1,0 +1,20 @@
+{
+  "name": "语寓 · 教师工作台",
+  "short_name": "语寓",
+  "description": "语寓于文，教思于行 —— 教师一体化工作台（备课 / 作业 / 班级 / 学情 / 数据备份）",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#eef5fb",
+  "theme_color": "#6ea8dc",
+  "icons": [
+    {
+      "src": "./img/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
