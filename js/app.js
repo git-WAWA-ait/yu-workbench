@@ -905,7 +905,7 @@ function genEssayReport(manual){
 
 // ---------- 通用：图片 OCR（复用联网引擎，离线降级）----------
 async function ocrImageFile(f){
-  await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js','Tesseract');
+  await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js','Tesseract',{integrity:TESSACT_SRI});
   if(typeof Tesseract==='undefined') throw new Error('OCR 引擎未加载');
   const { data } = await Tesseract.recognize(f, 'chi_sim+eng');
   return data.text || '';
@@ -1505,12 +1505,15 @@ function reviewScheduleModal(rows, srcName){
 }
 
 // 懒加载外部解析引擎（Word / PDF / 图片），失败则优雅提示
-function loadScript(src, winKey){
+const TESSACT_SRI='sha384-1zP4ZOtlk2FXAOiUArpMuWf7INJJKe/ROfYFAVSeUa11DEfXdKWGiPI3dVma2Gt0'; // tesseract.js@5.1.0 锁定版本的 SRI（防 CDN 篡改 RCE）
+function loadScript(src, winKey, opts){
+  opts = opts || {};
   return new Promise((resolve,reject)=>{
     if(winKey && window[winKey]!==undefined){ resolve(window[winKey]); return; }
     const s=document.createElement('script'); s.src=src; s.async=true;
+    if(opts.integrity){ s.setAttribute('integrity', opts.integrity); s.setAttribute('crossorigin','anonymous'); } // SRI 校验需 anonymous CORS
     s.onload=()=>resolve(window[winKey]!==undefined?window[winKey]:true);
-    s.onerror=()=>reject(new Error('解析引擎加载失败（需联网）：'+src));
+    s.onerror=()=>reject(new Error('解析引擎加载失败（需联网或校验不通过）：'+src));
     document.head.appendChild(s);
   });
 }
@@ -1518,7 +1521,7 @@ function loadScript(src, winKey){
 async function importDocx(f){
   toast('正在解析 Word 文档…');
   try{
-    await loadScript('https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js','mammoth');
+    await loadScript('js/vendor/mammoth.browser.min.js','mammoth');
     if(typeof mammoth==='undefined') throw new Error('Word 解析引擎未加载');
     const buf = await f.arrayBuffer();
     const res = await mammoth.extractRawText({ arrayBuffer: buf });
@@ -1529,9 +1532,9 @@ async function importDocx(f){
 async function importPdf(f){
   toast('正在解析 PDF…');
   try{
-    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js','pdfjsLib');
+    await loadScript('js/vendor/pdfjs/pdf.min.js','pdfjsLib');
     if(typeof pdfjsLib==='undefined') throw new Error('PDF 解析引擎未加载');
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'js/vendor/pdfjs/pdf.worker.min.js';
     const buf = await f.arrayBuffer();
     const doc = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
     let text='';
@@ -1547,7 +1550,7 @@ async function importPdf(f){
 async function importImage(f){
   toast('正在识别图片（OCR，首次较慢）…');
   try{
-    await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js','Tesseract');
+    await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js','Tesseract',{integrity:TESSACT_SRI});
     if(typeof Tesseract==='undefined') throw new Error('OCR 引擎未加载');
     const { data } = await Tesseract.recognize(f, 'chi_sim+eng');
     extractScheduleFromText(data.text, f.name);
