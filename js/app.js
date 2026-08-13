@@ -564,7 +564,14 @@ const views = {
       <label class="flex gap8 mt12" style="align-items:center;font-size:14px">
         <input type="checkbox" id="ghAuto"> 开启自动备份（数据变动后每 60 秒静默备份一次）
       </label>
-      <div class="muted mt8" style="font-size:12px">Token 需具备该仓库 <code>Contents: read &amp; write</code> 权限；建议使用「细粒度令牌」且只授权一个<b>私有</b>备份仓库。Token 仅存本机浏览器。</div>
+      <div class="muted mt8" style="font-size:12px">Token 需具备该仓库 <code>Contents: read &amp; write</code> 权限；建议使用「细粒度令牌」且只授权一个<b>私有</b>备份仓库。</div>
+      <div class="field mt12"><label>🔐 凭据加密口令（可选，强烈建议）</label><input id="secPass" type="password" placeholder="设置后，Token / API Key 将以 AES-GCM 加密存本机，明文不再落盘">
+        <div class="muted mt6" style="font-size:12px">设置口令后，保存时会把 GitHub Token 与挖挖 API Key 加密后再存浏览器；口令<b>只存在于本次会话内存</b>、关闭页面即失效，不会被保存。每次打开网页需重输口令「解锁」方能使用自动备份 / 挖挖 AI。留空则不加密（明文存储，风险较高）。</div>
+      </div>
+      <div class="flex gap8 mt8 wrap">
+        <button class="btn line sm" id="secUnlock">🔓 解锁 / 显示已加密凭据</button>
+        <span class="muted" id="secState" style="font-size:12px;align-self:center"></span>
+      </div>
       <div class="flex gap8 mt16 wrap">
         <button class="btn sm" data-action="saveGithubCfg">保存配置</button>
         <button class="btn line sm" data-action="githubBackup">立即备份</button>
@@ -928,6 +935,40 @@ function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<
 function escapeAttr(s){ return escapeHtml(s); }
 // 允许写回 localStorage 的应用自身键白名单（导入/恢复时拒绝未知键，阻断键注入）
 const LS_WHITELIST = ['yu_todo_done','yu_todos','yu_sites','yu_hw','yu_lesson_plans','yu_schedule','yu_periods','yu_class_remind','yu_agent_cfg','yu_agent_reminders','yu_comments','yu_bg','yuyu_api_base','yuyu_avatar','yuyu_name','yu_github_cfg','yu_github_last'];
+
+// 凭据加密会话（P2）：GitHub Token / 大模型 Key 以 AES-GCM 加密落盘，明文仅存于本次会话内存
+// 解密只在「解锁」时异步发生一次；之后 loadGithubCfg/loadAgentCfg 同步返回明文令牌，调用点无需改动
+const SECRET = {
+  gh:null, ag:null, hasEnc:false, unlocked:true,
+  init(){
+    try{
+      const g=JSON.parse(localStorage.getItem('yu_github_cfg')||'null');
+      const a=JSON.parse(localStorage.getItem(AGENT_CFG_KEY)||'null');
+      this.hasEnc = !!(g&&g.enc===true) || !!(a&&a.enc===true);
+    }catch(e){ this.hasEnc=false; }
+    this.gh=null; this.ag=null; this.unlocked=!this.hasEnc; // 无加密则默认“已解锁”
+  },
+  async unlock(pass){
+    if(!YuCrypto.supported()){ toast('当前环境不支持 Web Crypto（需 https/localhost）'); return false; }
+    const g=JSON.parse(localStorage.getItem('yu_github_cfg')||'null');
+    const a=JSON.parse(localStorage.getItem(AGENT_CFG_KEY)||'null');
+    let ok=true;
+    if(g&&g.enc===true){ try{ this.gh=await YuCrypto.decrypt(g.token,pass); }catch(e){ ok=false; this.gh=null; } }
+    if(a&&a.enc===true){ try{ this.ag=await YuCrypto.decrypt(a.key,pass); }catch(e){ ok=false; this.ag=null; } }
+    this.unlocked = ok && this.hasEnc;
+    return this.unlocked;
+  },
+  // 保存时按需加密：有口令则加密并标记 enc，同时把明文缓存进会话
+  async seal(plaintext, pass){
+    if(pass){
+      const env = await YuCrypto.encrypt(plaintext, pass);
+      this.unlocked = true;
+      return { value: env, enc: true };
+    }
+    return { value: plaintext, enc: false };
+  },
+  state(){ return !this.hasEnc ? 'none' : (this.unlocked ? 'unlocked' : 'locked'); }
+};
 
 // 一课一标·新课标对应工具：根据学段渲染右侧对应面板
 function renderCsTarget(grade, unit, stage){
@@ -1941,7 +1982,7 @@ function scoreQueryView(){
       <a class="btn line sm" href="score-query.html" target="_blank">↗ 独立查询页（可分享）</a>
     </div>
     <div class="card mb12">
-      <div class="muted mb12" style="font-size:12px">输入学生姓名与身份证号后 6 位，仅可查看该生本人成绩，保护隐私。</div>
+      <div class="muted mb12" style="font-size:12px">输入学生姓名与「私密查询码」，仅可查看该生本人成绩。查询码为随机令牌（不可由身份证号推导），由老师离线发放，请勿公开。</div>
       <div class="flex gap12 wrap" style="align-items:flex-end">
         <div class="field" style="min-width:160px"><label>考试类型</label>
           <select id="qExam">
@@ -1950,10 +1991,10 @@ function scoreQueryView(){
             <option value="final">${ex.final.name}</option>
           </select></div>
         <div class="field" style="min-width:160px"><label>学生姓名</label><input id="qName" placeholder="如 王思远"></div>
-        <div class="field" style="min-width:160px"><label>身份证号后 6 位</label><input id="qId6" placeholder="如 110612"></div>
+        <div class="field" style="min-width:160px"><label>私密查询码</label><input id="qCode" placeholder="如 W2S8X4MD"></div>
         <button class="btn" data-action="queryScore">查询</button>
       </div>
-      <div class="muted mt12" style="font-size:12px">演示账号：王思远 / 110612（其他同学后6位见学籍底表）</div>
+      <div class="muted mt12" style="font-size:12px">演示查询码：王思远 / W2S8X4MD。⚠️ 演示数据随站点公开，真实环境请勿将学生成绩置于公开静态站点，应通过私密后端按权限下发。</div>
     </div>
     <div id="scoreResult"></div>`;
 }
@@ -2080,7 +2121,7 @@ function docSections(sections){
 }
 async function enhanceDocWithAgent(title, r){
   try{
-    const cfg=JSON.parse(localStorage.getItem('yu_agent_cfg')||'null'); if(!cfg||!cfg.key) return r;
+    const cfg=loadAgentCfg(); if(!cfg||!cfg.key) return r;
     const sys='你是初中语文班主任「思思老师」的助手。请对以下文档各小节内容做规范化润色，形成更自然、得体的学校公文/汇报文稿；保持事实与数据不变，不虚构，每节 200 字以内。';
     const out=[];
     for(const sec of (r.sections||[])){
@@ -2202,7 +2243,7 @@ function buildComment(s){
 }
 async function enhanceCommentWithAgent(s, base){
   try{
-    const cfg = JSON.parse(localStorage.getItem('yu_agent_cfg')||'null');
+    const cfg = loadAgentCfg();
     if(!cfg || !(cfg.key || (cfg.relay&&cfg.relay.trim()))) return base;
     const sys='你是初中语文班主任「思思老师」的助手。请把下面这段操行评语草稿，润色为更自然、有温度、符合初中生身份的期末操行评语，保留所有事实（积分、成绩、亮点），不要虚构，300字以内。';
     const data = await agentChat(cfg, {model:cfg.model||'gpt-4o-mini', messages:[{role:'system',content:sys},{role:'user',content:base}]});
@@ -2389,8 +2430,8 @@ function bindExamImport(){
 function importExamFile(inp){
   const files=[...inp.files]; if(!files.length) return;
   const demo=[
-    { name:"新同学A", id6:"330101", s:{语文:100,数学:102,英语:98,物理:82,道法:42,历史:43,体育:56} },
-    { name:"新同学B", id6:"330102", s:{语文:96,数学:99,英语:95,物理:79,道法:41,历史:40,体育:54} },
+    { name:"新同学A", code:"NXA1D3K7", s:{语文:100,数学:102,英语:98,物理:82,道法:42,历史:43,体育:56} },
+    { name:"新同学B", code:"NXB2F8M4", s:{语文:96,数学:99,英语:95,物理:79,道法:41,历史:40,体育:54} },
   ];
   const cur = DB.examScores[analyticsTab].rows;
   demo.forEach(r=>cur.push(r));
@@ -2401,18 +2442,18 @@ function importExamFile(inp){
   inp.value='';
 }
 
-// 成绩查询（家长/学生自助）：姓名 + 身份证后6位
+// 成绩查询（家长/学生自助）：姓名 + 私密查询码（随机令牌，不可推导/不可枚举）
 function bindScoreQuery(){
   const btn = content.querySelector('[data-action="queryScore"]'); if(!btn) return;
   btn.onclick = ()=>{
     const exam = document.getElementById('qExam').value;
     const name = (document.getElementById('qName').value||'').trim();
-    const id6  = (document.getElementById('qId6').value||'').trim();
-    if(!name || !id6){ toast('请填写姓名与身份证后6位'); return; }
+    const code = (document.getElementById('qCode').value||'').trim().toUpperCase();
+    if(!name || !code){ toast('请填写姓名与私密查询码'); return; }
     const ranked = rankRows(DB.examScores[exam].rows);
-    const r = ranked.find(x=>x.name===name && x.id6===id6);
+    const r = ranked.find(x=>x.name===name && (x.code||'').toUpperCase()===code);
     const box = document.getElementById('scoreResult');
-    if(!r){ box.innerHTML = `<div class="card"><div class="muted">未查询到匹配记录，请核对姓名与身份证号后 6 位。</div></div>`; return; }
+    if(!r){ box.innerHTML = `<div class="card"><div class="muted">未查询到匹配记录，请核对姓名与私密查询码。</div></div>`; return; }
     box.innerHTML = scoreResultCard(exam, r);
   };
 }
@@ -2715,8 +2756,7 @@ async function buildDraftFromFiles(files){
   let tip = null;
   // 可选：已配置大模型（设置-大模型）时，让「挖挖」把资料梳理成更完整的教案要点
   try{
-    const raw = localStorage.getItem('yu_agent_cfg');
-    const cfg = raw ? JSON.parse(raw) : null;
+    const cfg = loadAgentCfg();
     if(cfg && (cfg.key || (cfg.relay&&cfg.relay.trim())) && text.trim()){
       const sys = '你是语文教研助手。请把以下备课资料梳理为教案要点，输出：课题、教学目标、教学重难点、教学过程（3-5步）。只输出要点，不要解释。';
       const data = await agentChat(cfg, {model:cfg.model||'gpt-4o-mini', messages:[{role:'system',content:sys},{role:'user',content:text.slice(0,6000)}]});
@@ -2979,7 +3019,7 @@ function bindView(view){
     // 智能体配置
     const ec = loadAgentCfg();
     if(ec){ if($('#agentBase')&&ec.base) $('#agentBase').value=ec.base; if($('#agentModel')&&ec.model) $('#agentModel').value=ec.model; if($('#agentKey')&&ec.key) $('#agentKey').value=ec.key; if($('#agentRelay')&&ec.relay) $('#agentRelay').value=ec.relay; }
-    const acs = $('#agentCfgSave'); if(acs) acs.onclick=()=>{ const cfg={ base:($('#agentBase').value||'').trim(), model:($('#agentModel').value||'').trim(), key:($('#agentKey').value||'').trim(), relay:($('#agentRelay').value||'').trim() }; if(!cfg.key && !cfg.relay){ toast('请填写 API Key，或填写中继地址'); return; } saveAgentCfg(cfg); toast('智能体配置已保存'); };
+    const acs = $('#agentCfgSave'); if(acs) acs.onclick=async()=>{ const cfg={ base:($('#agentBase').value||'').trim(), model:($('#agentModel').value||'').trim(), key:($('#agentKey').value||'').trim(), relay:($('#agentRelay').value||'').trim() }; if(!cfg.key && !cfg.relay){ toast('请填写 API Key，或填写中继地址'); return; } const pass=($('#secPass')?.value||'').trim(); if(cfg.key && pass){ try{ const r=await SECRET.seal(cfg.key, pass); cfg.key=r.value; cfg.enc=r.enc; if(r.enc) SECRET.ag=cfg.key; }catch(e){ toast('✗ 加密失败：'+(e.message||e)); return; } } saveAgentCfg(cfg); toast('智能体配置已保存'+(cfg.enc?'（Key 已加密存储）':'')); };
     const acc = $('#agentCfgClear'); if(acc) acc.onclick=()=>{ saveAgentCfg(null); ['agentBase','agentModel','agentKey','agentRelay'].forEach(id=>{ const x=$('#'+id); if(x) x.value=''; }); toast('已清除智能体配置'); };
     const atr = $('#agentTry'); if(atr) atr.onclick=()=>openAgent();
     const ats = $('#agentTest'); if(ats) ats.onclick=()=>testAgentConn();
@@ -2991,7 +3031,7 @@ function bindView(view){
 }
 
 // ================= GitHub 数据备份（自动 / 可恢复） =================
-function loadGithubCfg(){ try{ return JSON.parse(localStorage.getItem('yu_github_cfg')||'null'); }catch(e){ return null; } }
+function loadGithubCfg(){ try{ const c=JSON.parse(localStorage.getItem('yu_github_cfg')||'null'); if(c&&c.enc===true){ return Object.assign({},c,{ token:(SECRET.gh!=null?SECRET.gh:'') }); } return c; }catch(e){ return null; } }
 function saveGithubCfg(c){ try{ localStorage.setItem('yu_github_cfg', JSON.stringify(c)); }catch(e){} }
 function utf8ToB64(str){ return btoa(String.fromCharCode.apply(null, new TextEncoder().encode(str))); }
 function b64ToUtf8(b64){ const bin=atob((b64||'').replace(/\s/g,'')); const bytes=Uint8Array.from(bin, c=>c.charCodeAt(0)); return new TextDecoder().decode(bytes); }
@@ -3007,6 +3047,7 @@ function githubApiHeaders(token){ return { 'Authorization':'Bearer '+token, 'Acc
 async function githubBackupNow(opts){
   opts=opts||{};
   const cfg=loadGithubCfg();
+  if(cfg&&cfg.enc===true&&!SECRET.unlocked){ toast('🔒 凭据已加密，请先在上方输入口令并点「解锁」'); return false; }
   if(!cfg||!cfg.token||!cfg.owner||!cfg.repo){ toast('请先在「个人与设置 → GitHub 备份」中填写仓库与 Token'); return false; }
   const body=JSON.stringify(githubSnapshot(),null,2);
   let content; try{ content=utf8ToB64(body); }catch(e){ toast('✗ 备份序列化失败'); return false; }
@@ -3027,6 +3068,7 @@ async function githubBackupNow(opts){
 
 async function githubRestoreNow(){
   const cfg=loadGithubCfg();
+  if(cfg&&cfg.enc===true&&!SECRET.unlocked){ toast('🔒 凭据已加密，请先在上方输入口令并点「解锁」'); return; }
   if(!cfg||!cfg.token){ toast('请先填写 GitHub 配置'); return; }
   const u=`https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${encodeURIComponent(cfg.path)}?ref=${encodeURIComponent(cfg.branch||'main')}`;
   try{
@@ -3046,16 +3088,30 @@ async function githubRestoreNow(){
 }
 
 function bindGitHubBackup(){
+  SECRET.init();
   const cfg=loadGithubCfg();
   if(cfg){
     if($('#ghRepo')) $('#ghRepo').value=cfg.owner+'/'+cfg.repo;
     if($('#ghBranch')) $('#ghBranch').value=cfg.branch||'main';
     if($('#ghPath')) $('#ghPath').value=cfg.path||'yu-backup/data.json';
-    if($('#ghToken')) $('#ghToken').value=cfg.token||'';
+    // 已加密配置不回填明文 Token 到输入框（防泄露）；仅保留占位提示
+    if($('#ghToken')){ if(cfg.enc===true && !SECRET.unlocked){ $('#ghToken').value=''; $('#ghToken').placeholder='🔒 已加密，输入口令解锁后使用'; } else { $('#ghToken').value=cfg.token||''; } }
     if($('#ghAuto')) $('#ghAuto').checked=!!cfg.auto;
   }
   const st=$('#ghStatus');
   if(st){ let t=null; try{ t=localStorage.getItem('yu_github_last'); }catch(e){} st.textContent = t?('上次备份：'+new Date(t).toLocaleString()):'尚未备份'; }
+  // 凭据解锁
+  const su=$('#secUnlock'); if(su){ su.onclick=async()=>{
+    const pass=($('#secPass')?.value||'').trim();
+    if(!pass){ toast('请输入加密口令'); return; }
+    if(!SECRET.hasEnc){ toast('当前没有已加密的凭据，无需解锁'); return; }
+    const ok=await SECRET.unlock(pass);
+    const ss=$('#secState');
+    if(ok){ if(ss) ss.textContent='✅ 已解锁，本次会话可正常使用自动备份 / 挖挖 AI'; toast('🔓 凭据已解锁'); }
+    else { if(ss) ss.textContent='❌ 口令错误，无法解密'; toast('✗ 口令错误'); }
+  }; }
+  const ss=$('#secState');
+  if(ss && SECRET.state()==='locked'){ ss.textContent='🔒 检测到已加密凭据，请输入口令后点「解锁」'; }
 }
 
 // ================= JSON 数据备份（导入 / 导出，纯本地文件） =================
@@ -3423,13 +3479,21 @@ function handleAction(a,b){
     const path=($('#ghPath')?.value||'').trim()||'yu-backup/data.json';
     const token=($('#ghToken')?.value||'').trim();
     const auto=!!$('#ghAuto')?.checked;
+    const pass=($('#secPass')?.value||'').trim();
     if(!repo||!token){ toast('请填写仓库与 Token'); return; }
     const parts=repo.split('/');
     const owner=(parts[0]||'').trim(); const name=(parts[1]||'').trim();
     if(!owner||!name){ toast('仓库格式应为 owner/repo'); return; }
-    saveGithubCfg({ owner, repo:name, branch, path, token, auto });
-    startAutoBackup();
-    toast('GitHub 备份配置已保存'+(auto?'，自动备份已开启':''));
+    (async()=>{
+      let enc=false, storeToken=token;
+      if(pass){
+        try{ const r=await SECRET.seal(token, pass); storeToken=r.value; enc=r.enc; SECRET.gh=token; }
+        catch(e){ toast('✗ 加密失败：'+(e.message||e)); return; }
+      }
+      saveGithubCfg({ owner, repo:name, branch, path, token:storeToken, enc, auto });
+      startAutoBackup();
+      toast('GitHub 备份配置已保存'+(enc?'（Token 已加密存储）':'')+(auto?'，自动备份已开启':''));
+    })();
     return;
   }
   if(a==='githubBackup'){ githubBackupNow(); return; }
@@ -3601,7 +3665,7 @@ const AGENT_CFG_KEY = 'yu_agent_cfg';
 
 function loadAgentReminders(){ try{ const s=localStorage.getItem(AGENT_REMIND_KEY); if(s) agentReminders=JSON.parse(s)||[]; }catch(e){ agentReminders=[]; } }
 function saveAgentReminders(){ try{ localStorage.setItem(AGENT_REMIND_KEY, JSON.stringify(agentReminders)); }catch(e){} }
-function loadAgentCfg(){ try{ return JSON.parse(localStorage.getItem(AGENT_CFG_KEY)||'null'); }catch(e){ return null; } }
+function loadAgentCfg(){ try{ const c=JSON.parse(localStorage.getItem(AGENT_CFG_KEY)||'null'); if(c&&c.enc===true){ return Object.assign({},c,{ key:(SECRET.ag!=null?SECRET.ag:'') }); } return c; }catch(e){ return null; } }
 function saveAgentCfg(c){ try{ localStorage.setItem(AGENT_CFG_KEY, JSON.stringify(c)); }catch(e){} }
 
 // 待办持久化（让智能体可增删待办并落盘）
@@ -3881,6 +3945,7 @@ initAgent();      // 创建智能体助手面板（悬浮入口 + 聊天抽屉�
 loadProfile();
 renderAvatar();
 loadBg(); // 应用个性化背景（个人与设置）
+SECRET.init(); // 凭据加密会话：识别是否已加密，决定是否需解锁
 startAutoBackup(); // 启动 GitHub 自动备份（若已开启）
 startRemind(); // 启动右上角上课提醒闹钟图标
 ['#sideAvatar'].forEach(sel=>{ const x=$(sel); if(x) x.onclick=openAvatarEditor; });
