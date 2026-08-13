@@ -473,17 +473,23 @@ table .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;fon
 
 /* ===== 手机端适配（窄屏：侧栏转顶部横向导航，网格转单列） ===== */
 @media (max-width: 860px){
-  .app{ flex-direction:column; min-height:100vh; }
-  .sidebar{ width:100%; height:auto; position:static; flex-direction:row; align-items:center;
-    gap:8px; padding:8px 10px; border-right:none; border-bottom:1px solid var(--line);
-    overflow-x:auto; }
-  .brand{ flex:none; padding:0; }
-  .brand-logo{ width:32px; height:32px; font-size:17px; border-radius:8px; }
+  /* 手机端：侧栏保持为左侧竖向「任务栏」，主内容在右侧（不再堆到顶部横滑） */
+  .app{ flex-direction:row; min-height:100vh; }
+  .sidebar{ width:80px; height:100vh; position:sticky; top:0; flex-direction:column;
+    align-items:stretch; gap:6px; padding:14px 8px; border-right:1px solid var(--line);
+    border-bottom:none; overflow-y:auto; overflow-x:hidden; }
+  .brand{ flex:none; padding:0 0 6px; justify-content:center; }
+  .brand-logo{ width:44px; height:44px; font-size:19px; border-radius:13px; }
   .brand-text{ display:none; }
-  .nav{ flex-direction:row; flex:1; gap:4px; padding:0; overflow-x:auto; }
-  .nav-item{ white-space:nowrap; padding:8px 10px; border-radius:8px; flex:none; }
-  .nav-item .ico{ width:auto; }
-  .sidebar-foot{ display:none; }
+  .nav{ flex-direction:column; flex:1; gap:7px; padding:0; overflow-y:auto; overflow-x:hidden; }
+  .nav-item{ flex-direction:column; align-items:center; justify-content:center; gap:4px;
+    padding:9px 2px; border-radius:13px; white-space:nowrap; font-size:10px; line-height:1.2; flex:none; }
+  .nav-item .ico{ width:auto; font-size:20px; }
+  .nav-item.active{ box-shadow:0 2px 8px rgba(40,70,110,.10); }
+  .sidebar-foot{ display:flex; padding:10px 0 0; border-top:1px solid var(--line); justify-content:center; }
+  .user-mini{ gap:0; }
+  .sidebar-foot .uname, .sidebar-foot .urole{ display:none; }
+  .sidebar-foot .avatar{ width:36px; height:36px; font-size:14px; }
 
   .main{ min-width:0; }
   .topbar{ padding:0 12px; gap:8px; height:52px; }
@@ -615,6 +621,14 @@ table .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;fon
 }
 /* 极窄屏（520px 以下，最后定义避免被 860/560 覆盖） */
 @media (max-width:520px){
+  .sidebar{ width:68px; padding:12px 6px; }
+  .brand-logo{ width:40px; height:40px; font-size:17px; }
+  .nav{ gap:6px; }
+  .nav-item{ font-size:9px; padding:8px 1px; gap:3px; }
+  .nav-item .ico{ font-size:18px; }
+  .sidebar-foot .avatar{ width:34px; height:34px; font-size:13px; }
+  .topbar{ padding:0 10px; }
+  .content{ padding:12px; }
   .quick-grid{ grid-template-columns:repeat(2,1fr); }
   .kpi-strip{ grid-template-columns:repeat(2,1fr); }
   .task-board{ grid-template-columns:1fr; }
