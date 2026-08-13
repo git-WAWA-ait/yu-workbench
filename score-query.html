@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>语寓 · 成绩自助查询</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https:; font-src 'self' data:; worker-src 'self' blob: https://cdn.jsdelivr.net; object-src 'none'; base-uri 'self'; frame-ancestors 'none'" />
 <link rel="stylesheet" href="css/style.css" />
 <style>
   body { background:#f4f7fb; }
@@ -19,6 +20,8 @@
   #scoreResult .card { background:#fff; border:1px solid var(--line); border-radius:14px; padding:20px;
     box-shadow:0 8px 28px rgba(40,70,110,.06); }
   .sq-tip { font-size:12px; color:#8a94a6; margin-top:10px; }
+  .sq-warn { font-size:12px; line-height:1.7; margin-top:14px; padding:12px 14px; border-radius:10px;
+    background:#fff4e5; border:1px solid #ffd591; color:#8a5a00; }
 </style>
 </head>
 <body>
@@ -33,18 +36,19 @@
 
   <div class="sq-card">
     <div class="section-title" style="margin-top:0">🔎 成绩查询</div>
-    <div class="muted mb12" style="font-size:12px">输入学生姓名与身份证号后 6 位，仅可查看该生本人成绩，保护隐私。</div>
+    <div class="muted mb12" style="font-size:12px">输入学生姓名与「私密查询码」，仅可查看该生本人成绩。查询码为随机令牌（不可由身份证号推导、不可枚举），由老师离线发放，请勿公开。</div>
     <div class="flex gap12 wrap" style="align-items:flex-end">
       <div class="field" style="min-width:170px"><label>考试类型</label>
         <select id="qExam"></select></div>
       <div class="field" style="min-width:160px"><label>学生姓名</label>
         <input id="qName" placeholder="如 王思远" autocomplete="off"></div>
-      <div class="field" style="min-width:170px"><label>身份证号后 6 位</label>
-        <input id="qId6" placeholder="如 110612" inputmode="numeric" autocomplete="off"></div>
+      <div class="field" style="min-width:170px"><label>私密查询码</label>
+        <input id="qCode" placeholder="如 W2S8X4MD" inputmode="text" autocomplete="off"></div>
       <button class="btn" id="btnQuery">查询</button>
       <button class="btn line" id="btnShare">↗ 复制分享链接</button>
     </div>
-    <div class="sq-tip">演示账号：王思远 / 110612（其他同学后 6 位见学籍底表）。分享链接可预填考试与姓名，身份证后 6 位由学生本人输入，不会写入链接。</div>
+    <div class="sq-tip">演示查询码：王思远 / W2S8X4MD。分享链接可预填考试与姓名，查询码由学生本人输入，不会写入链接。</div>
+    <div class="sq-warn">⚠️ 演示提示：本页与成绩数据随站点公开部署，演示数据仅作样例。<b>真实环境请勿将学生成绩置于公开静态站点</b>，应通过私密后端按权限下发；查询码也应由教师在私密环境生成并离线分发，切勿写入公开仓库。</div>
   </div>
 
   <div id="scoreResult" class="mt16"></div>
@@ -53,76 +57,6 @@
 </div>
 
 <script src="js/data.js"></script>
-<script>
-(function(){
-  if(!window.DB || !DB.examScores){ document.getElementById('scoreResult').innerHTML =
-    '<div class="card"><div class="muted">成绩数据未能加载（请确保与 css/、js/ 同目录打开）。</div></div>'; return; }
-
-  var exams = DB.examScores;
-  var keys = ['monthly','mid','final'];
-
-  var ex = document.getElementById('qExam');
-  ex.innerHTML = keys.map(function(k){ return '<option value="'+k+'">'+exams[k].name+'</option>'; }).join('');
-
-  // 深链预填：?exam=mid&name=王思远（身份证后6位绝不进 URL）
-  var p = new URLSearchParams(location.search);
-  if(p.get('exam') && exams[p.get('exam')]) ex.value = p.get('exam');
-  if(p.get('name')) document.getElementById('qName').value = p.get('name');
-
-  function rankRows(rows){
-    var t = rows.map(function(r){ return Object.assign({}, r,
-      { total: Object.values(r.s).reduce(function(a,b){return a+b;},0) }); });
-    t.sort(function(a,b){ return b.total - a.total; });
-    return t.map(function(r,i){ return Object.assign({}, r, { rank:i+1 }); });
-  }
-
-  function scoreResultCard(examKey, r){
-    var ex = DB.examScores[examKey];
-    var sub = DB.examSubjects;
-    return '<div class="card">' +
-      '<div class="flex between mb12">' +
-        '<div class="section-title" style="margin:0">📄 '+ex.name+'（'+ex.date+'） · '+r.name+' 成绩</div>' +
-        '<span class="tag blue">班名 '+r.rank+' / '+ex.rows.length+'</span>' +
-      '</div>' +
-      '<table class="mt16"><thead><tr><th>科目</th>'+sub.map(function(s){return '<th>'+s+'</th>';}).join('')+'<th>总分</th></tr></thead>' +
-        '<tbody><tr><td><b>得分</b></td>'+sub.map(function(s){return '<td>'+r.s[s]+'</td>';}).join('')+'<td><b>'+r.total+'</b></td></tr></tbody></table>' +
-      '<div class="muted mt12" style="font-size:12px">查询结果仅本人可见；学校留存原始成绩用于学情分析</div>' +
-    '</div>';
-  }
-
-  function doQuery(){
-    var exam = ex.value;
-    var name = document.getElementById('qName').value.trim();
-    var id6 = document.getElementById('qId6').value.trim();
-    var box = document.getElementById('scoreResult');
-    if(!name || !id6){ box.innerHTML = '<div class="card"><div class="muted">请填写姓名与身份证号后 6 位。</div></div>'; return; }
-    var ranked = rankRows(DB.examScores[exam].rows);
-    var r = ranked.find(function(x){ return x.name===name && x.id6===id6; });
-    if(!r){ box.innerHTML = '<div class="card"><div class="muted">未查询到匹配记录，请核对姓名与身份证号后 6 位。</div></div>'; return; }
-    box.innerHTML = scoreResultCard(exam, r);
-  }
-
-  function doShare(){
-    var exam = ex.value;
-    var name = document.getElementById('qName').value.trim();
-    var base = location.href.split('?')[0];
-    var url = base + '?exam=' + encodeURIComponent(exam) + (name ? '&name=' + encodeURIComponent(name) : '');
-    var btn = document.getElementById('btnShare');
-    var orig = btn.textContent;
-    function ok(){ btn.textContent='✓ 已复制'; btn.disabled=true; setTimeout(function(){ btn.textContent=orig; btn.disabled=false; }, 1800); }
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(url).then(ok, function(){ window.prompt('复制以下链接分享给学生 / 家长：', url); });
-    } else {
-      window.prompt('复制以下链接分享给学生 / 家长：', url);
-    }
-  }
-
-  document.getElementById('btnQuery').onclick = doQuery;
-  document.getElementById('btnShare').onclick = doShare;
-  ['qName','qId6'].forEach(function(id){
-    document.getElementById(id).addEventListener('keydown', function(e){ if(e.key==='Enter') doQuery(); });
-  });
-})();
-</script>
+<script src="js/score-query.js"></script>
 </body>
 </html>
